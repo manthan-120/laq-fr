@@ -34,6 +34,9 @@ Thumbs.db
 # Uploads
 uploads/
 
+# Cache
+cache/
+
 # Node.js / Frontend
 node_modules/
 frontend/dist/

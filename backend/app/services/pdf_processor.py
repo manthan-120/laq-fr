@@ -83,11 +83,12 @@ class PDFProcessor:
 
         return path
 
-    def extract_markdown_from_pdf(self, pdf_path: Path) -> str:
-        """Convert PDF to markdown using Docling.
+    def extract_markdown_from_pdf(self, pdf_path: Path, cache_result: bool = True) -> str:
+        """Convert PDF to markdown using Docling with optional caching.
 
         Args:
             pdf_path: Path to the PDF file
+            cache_result: Whether to cache the conversion result
 
         Returns:
             Markdown content
@@ -95,11 +96,34 @@ class PDFProcessor:
         Raises:
             PDFProcessingError: If conversion fails
         """
+        import hashlib
+        from pathlib import Path
+
+        # Check cache first if enabled
+        if cache_result:
+            cache_dir = Path("./cache/markdown")
+            cache_dir.mkdir(parents=True, exist_ok=True)
+
+            # Generate cache key from file hash
+            with open(pdf_path, 'rb') as f:
+                file_hash = hashlib.md5(f.read()).hexdigest()
+            cache_file = cache_dir / f"{pdf_path.stem}_{file_hash}.md"
+
+            if cache_file.exists():
+                print(f"✅ Using cached markdown conversion")
+                return cache_file.read_text(encoding='utf-8')
+
         try:
             print(f"🔄 Converting PDF to markdown...")
             doc = self.converter.convert(str(pdf_path))
             markdown_data = doc.document.export_to_markdown()
             print(f"✅ Conversion successful ({len(markdown_data)} characters)")
+
+            # Cache the result
+            if cache_result:
+                cache_file.write_text(markdown_data, encoding='utf-8')
+                print(f"💾 Cached markdown conversion")
+
             return markdown_data
         except Exception as e:
             raise PDFProcessingError(

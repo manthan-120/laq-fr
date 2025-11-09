@@ -49,11 +49,57 @@ async def upload_pdf(file: UploadFile = File(...)):
         embedding_service = EmbeddingService(config)
         db = LAQDatabase(config)
 
-        # Process PDF
+        # Check if PDF already processed (if enabled)
+        if config.skip_duplicate_pdfs:
+            if db.pdf_already_processed(file.filename):
+                existing_count = db.get_pdf_qa_count(file.filename)
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"PDF '{file.filename}' already processed with {existing_count} Q&A pairs. "
+                           f"Delete existing entries first or disable SKIP_DUPLICATE_PDFS."
+                )
+
+        # Process PDF (with caching if enabled)
         laq_data = pdf_processor.process_pdf(str(file_path))
 
-        # Generate embeddings and store
-        embedding_service.embed_qa_pairs(laq_data, db)
+        # Prepare metadata for enhanced embeddings
+        laq_metadata = {
+            'laq_type': laq_data.laq_type,
+            'minister': laq_data.minister,
+            'date': laq_data.date,
+            'pdf_title': laq_data.pdf_title
+        }
+
+        # Convert Q&A pairs to dict format
+        qa_pairs_dict = [
+            {'question': qa.question, 'answer': qa.answer}
+            for qa in laq_data.qa_pairs
+        ]
+
+        # Generate embeddings with optimizations
+        embeddings_list = embedding_service.embed_qa_pairs(
+            qa_pairs=qa_pairs_dict,
+            laq_metadata=laq_metadata if config.use_enhanced_context else None,
+            use_enhanced_context=config.use_enhanced_context
+        )
+
+        # Store in database
+        laq_data_dict = {
+            'pdf_title': laq_data.pdf_title,
+            'laq_type': laq_data.laq_type,
+            'laq_number': laq_data.laq_number,
+            'minister': laq_data.minister,
+            'date': laq_data.date,
+            'tabled_by': laq_data.tabled_by,
+            'attachments': laq_data.attachments,
+            'qa_pairs': qa_pairs_dict
+        }
+
+        stored_count = db.store_qa_pairs(
+            laq_data=laq_data_dict,
+            pdf_name=file.filename,
+            embeddings_list=embeddings_list
+        )
 
         # Convert to response model
         qa_pairs_response = [
@@ -74,7 +120,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 
         return UploadResponse(
             success=True,
-            message=f"Successfully processed {file.filename}",
+            message=f"Successfully processed {file.filename} - Stored {stored_count} Q&A pairs",
             pdf_name=file.filename,
             qa_pairs_extracted=len(laq_data.qa_pairs),
             laq_data=laq_response

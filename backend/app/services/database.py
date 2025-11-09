@@ -229,3 +229,43 @@ class LAQDatabase:
             return len(result["ids"]) > 0
         except:
             return False
+
+    def pdf_already_processed(self, pdf_name: str, laq_number: str = None) -> bool:
+        """Check if a PDF has already been processed and stored.
+
+        Args:
+            pdf_name: Name of the PDF file
+            laq_number: Optional LAQ number for more specific check
+
+        Returns:
+            True if PDF already processed, False otherwise
+        """
+        try:
+            if laq_number:
+                # Check for specific LAQ number
+                doc_id_prefix = f"{Path(pdf_name).stem}_{laq_number}_qa"
+                result = self.collection.get(where={"pdf": pdf_name, "laq_num": str(laq_number)})
+            else:
+                # Check for any documents from this PDF
+                result = self.collection.get(where={"pdf": pdf_name})
+
+            return len(result["ids"]) > 0
+        except Exception as e:
+            print(f"⚠️ Error checking if PDF processed: {e}")
+            return False
+
+    def get_pdf_qa_count(self, pdf_name: str) -> int:
+        """Get the number of Q&A pairs stored for a specific PDF.
+
+        Args:
+            pdf_name: Name of the PDF file
+
+        Returns:
+            Number of Q&A pairs from this PDF
+        """
+        try:
+            result = self.collection.get(where={"pdf": pdf_name})
+            return len(result["ids"])
+        except Exception as e:
+            print(f"⚠️ Error getting PDF Q&A count: {e}")
+            return 0
