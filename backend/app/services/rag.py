@@ -53,8 +53,12 @@ class RAGService:
             raise ValueError("Query cannot be empty")
 
         try:
+            # Format query to match the enhanced embedding format used during storage
+            # This improves semantic matching by using the same format
+            formatted_query = f"Question: {query}\nAnswer: "
+
             # Generate query embedding
-            query_embedding = self.embeddings.embed_text(query)
+            query_embedding = self.embeddings.embed_text(formatted_query)
 
             # Search database
             results = self.db.search(query_embedding, n_results=top_k)

@@ -29,9 +29,9 @@ class Config:
     ollama_timeout: int = int(os.getenv("OLLAMA_TIMEOUT", "60"))
 
     # Retrieval settings
-    search_top_k: int = int(os.getenv("SEARCH_TOP_K", "5"))
-    chat_top_k: int = int(os.getenv("CHAT_TOP_K", "3"))
-    similarity_threshold: float = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))
+    search_top_k: int = int(os.getenv("SEARCH_TOP_K", "10"))
+    chat_top_k: int = int(os.getenv("CHAT_TOP_K", "5"))
+    similarity_threshold: float = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
 
     # Processing settings
     markdown_chunk_size: int = int(os.getenv("MARKDOWN_CHUNK_SIZE", "20000"))  # Increased for better extraction
