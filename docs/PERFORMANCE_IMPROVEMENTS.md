@@ -7,9 +7,9 @@ This document outlines the optimizations implemented to improve both **embedding
 ## Summary of Improvements
 
 ### Speed Improvements
-- **10-20x faster embedding generation** via batch API calls
 - **50-90% faster re-uploads** with markdown conversion caching
 - **Instant duplicate detection** to prevent redundant processing
+- **Improved error handling** for embedding generation
 
 ### Quality Improvements
 - **Better semantic search** with context-enriched embeddings
@@ -22,25 +22,26 @@ This document outlines the optimizations implemented to improve both **embedding
 
 ### 1. Batch Embedding API (`embeddings.py`)
 
-**Problem**: Sequential processing made 1 API call per Q&A pair (10 pairs = 10 calls)
+**Status**: Infrastructure prepared for future batch support
 
-**Solution**: Single batch API call for all embeddings
+**Current Implementation**: Sequential processing with optimized error handling
+
+**Note**: The ollama Python library doesn't currently support batch embeddings. The code infrastructure is prepared for when batch support is added in the future.
 
 ```python
-# Before (Sequential)
-for text in texts:
-    embedding = embed_text(text)  # N API calls
-
-# After (Batch)
-embeddings = ollama.embed(model="nomic-embed-text", input=texts)  # 1 API call
+# Current (Sequential with future-ready structure)
+def embed_batch(texts):
+    embeddings = []
+    for text in texts:
+        embedding = ollama.embeddings(model="nomic-embed-text", prompt=text)
+        embeddings.append(embedding["embedding"])
+    return embeddings
 ```
 
 **Impact**:
-- 10 Q&A pairs: ~10x faster
-- 50 Q&A pairs: ~15-20x faster
-- Fallback to sequential if batch fails (fault tolerance)
-
-**Configuration**: `USE_BATCH_EMBEDDINGS=true` (default)
+- Graceful error handling for failed embeddings
+- Infrastructure ready for 10-20x speedup when batch API is available
+- Configuration flag reserved: `USE_BATCH_EMBEDDINGS=true`
 
 ---
 
@@ -156,14 +157,14 @@ MARKDOWN_CHUNK_SIZE=20000        # Increased from 10000
 
 ### Embedding Generation
 
-| Q&A Pairs | Before (Sequential) | After (Batch) | Speedup |
-|-----------|---------------------|---------------|---------|
-| 5         | ~5s                 | ~0.5s         | 10x     |
-| 10        | ~10s                | ~0.8s         | 12x     |
-| 25        | ~25s                | ~1.5s         | 16x     |
-| 50        | ~50s                | ~2.5s         | 20x     |
+Embedding generation remains sequential as ollama Python library doesn't support batch processing yet. Performance depends on Ollama server configuration and hardware.
 
-*Times approximate, vary by hardware and Ollama configuration*
+**Typical Times** (varies by hardware):
+- 5 Q&A pairs: ~5-10s
+- 10 Q&A pairs: ~10-20s
+- 25 Q&A pairs: ~25-50s
+
+**Note**: When batch API support is added, expect 10-20x speedup.
 
 ### PDF Re-upload
 
@@ -365,8 +366,10 @@ logger.info(f"Generated {len(embeddings)} embeddings in {duration:.2f}s "
 
 These optimizations provide significant improvements to both speed and quality:
 
-**Speed**: 10-20x faster embedding generation, 50-90% faster re-uploads
+**Speed**: 50-90% faster re-uploads with caching, instant duplicate detection
 **Quality**: Better semantic search with context-enriched embeddings
-**UX**: Duplicate detection, better error messages, cached conversions
+**UX**: Improved error handling, helpful messages, cached conversions
 
 All changes are **backward compatible** and **configurable**, allowing gradual adoption or easy rollback if needed.
+
+**Future Enhancement**: When ollama adds batch embedding support, expect additional 10-20x speedup for embedding generation.

@@ -69,8 +69,8 @@ class EmbeddingService:
             raise ValueError("Text cannot be empty")
 
         try:
-            response = ollama.embed(model=self.config.embedding_model, input=text)
-            return response["embeddings"][0]
+            response = ollama.embeddings(model=self.config.embedding_model, prompt=text)
+            return response["embedding"]
         except KeyError as e:
             raise OllamaModelNotFoundError(
                 f"Model '{self.config.embedding_model}' not found.\n"
@@ -85,11 +85,11 @@ class EmbeddingService:
             raise EmbeddingError(f"Unexpected embedding error: {e}") from e
 
     def embed_batch(self, texts: List[str], use_batch_api: bool = True) -> List[List[float]]:
-        """Generate embeddings for multiple texts with optimized batch processing.
+        """Generate embeddings for multiple texts with optimized processing.
 
         Args:
             texts: List of texts to embed
-            use_batch_api: Use Ollama's batch API (faster) vs sequential processing
+            use_batch_api: Reserved for future batch API support (currently uses sequential)
 
         Returns:
             List of embedding vectors
@@ -101,36 +101,19 @@ class EmbeddingService:
         if not texts:
             raise ValueError("Texts list cannot be empty")
 
-        # Use batch API for better performance
-        if use_batch_api:
+        # Note: ollama Python library doesn't support batch embeddings yet
+        # Process sequentially but keep parameter for future compatibility
+        embeddings = []
+        for i, text in enumerate(texts):
             try:
-                response = ollama.embed(
-                    model=self.config.embedding_model,
-                    input=texts
-                )
-                return response["embeddings"]
-            except KeyError as e:
-                raise OllamaModelNotFoundError(
-                    f"Model '{self.config.embedding_model}' not found.\n"
-                    f"Run: ollama pull {self.config.embedding_model}"
-                ) from e
-            except Exception as e:
-                # Fallback to sequential processing if batch fails
-                print(f"⚠️ Batch embedding failed, falling back to sequential: {e}")
-                use_batch_api = False
+                embedding = self.embed_text(text)
+                embeddings.append(embedding)
+            except EmbeddingError as e:
+                print(f"⚠️ Failed to embed text {i+1}/{len(texts)}: {e}")
+                # Return empty embedding as placeholder
+                embeddings.append([])
 
-        # Fallback: sequential processing
-        if not use_batch_api:
-            embeddings = []
-            for i, text in enumerate(texts):
-                try:
-                    embedding = self.embed_text(text)
-                    embeddings.append(embedding)
-                except EmbeddingError as e:
-                    print(f"⚠️ Failed to embed text {i+1}/{len(texts)}: {e}")
-                    # Return empty embedding as placeholder
-                    embeddings.append([])
-            return embeddings
+        return embeddings
 
     def embed_qa_pairs(
         self,
