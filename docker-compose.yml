@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Backend FastAPI service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: laq-rag-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist ChromaDB data
+      - laq-db-data:/app/laq_db
+      # Mount sample PDFs for easy access
+      - ./sample_pdfs:/app/sample_pdfs:ro
+    environment:
+      # Ollama configuration - connects to host Ollama
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - LLM_MODEL=mistral
+      - EMBEDDING_MODEL=nomic-embed-text
+      # Database configuration
+      - DB_PATH=/app/laq_db
+      - COLLECTION_NAME=laqs
+      # RAG settings
+      - TOP_K=5
+      - SIMILARITY_THRESHOLD=0.6
+      - TEMPERATURE=0.1
+    extra_hosts:
+      # Enable connection to host Ollama on Windows/Mac
+      - "host.docker.internal:host-gateway"
+    networks:
+      - laq-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Nginx service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: laq-rag-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - laq-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+# Named volumes for data persistence
+volumes:
+  laq-db-data:
+    driver: local
+    name: laq-rag-chromadb
+
+# Custom network
+networks:
+  laq-network:
+    driver: bridge
+    name: laq-rag-network

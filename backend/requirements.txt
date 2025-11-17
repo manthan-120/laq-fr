@@ -7,6 +7,7 @@ python-multipart==0.0.6
 
 # Existing dependencies
 chromadb==0.4.22
+numpy<2.0.0  # ChromaDB 0.4.22 requires NumPy < 2.0
 ollama==0.1.6
 docling>=2.0.0
 docling-core>=1.7.0

@@ -64,7 +64,7 @@ function Search() {
             {results.map((result, index) => (
               <div key={index} className="result-card">
                 <div className="result-score">
-                  {(result.similarity_score * 100).toFixed(1)}%
+                  {result.similarity_score.toFixed(1)}%
                 </div>
                 <div className="result-content">
                   <div className="result-question">

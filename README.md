@@ -73,6 +73,41 @@ ollama list
 
 ## 🛠️ Installation
 
+**Choose your installation method:**
+
+### Option A: Docker (Recommended for Demos/Production) 🐳
+
+Perfect for investor demos, deployments, and running on different machines.
+
+**Requirements:**
+- Docker Desktop (Windows/Mac) or Docker Engine (Linux)
+- Ollama installed on host machine with models pre-downloaded
+- Git
+
+**Quick Start:**
+```bash
+# 1. Clone repository
+git clone <repository-url>
+cd minimal-local-RAG
+
+# 2. Ensure Ollama is running with models
+ollama list  # Should show mistral and nomic-embed-text
+
+# 3. Start all services
+docker-compose up -d
+
+# 4. Access application
+# Frontend: http://localhost:5173
+# Backend: http://localhost:8000
+# API Docs: http://localhost:8000/api/docs
+```
+
+See [README.DOCKER.md](README.DOCKER.md) for complete Docker documentation, troubleshooting, and advanced usage.
+
+---
+
+### Option B: Manual Installation (For Development)
+
 ### 1. Clone Repository
 ```bash
 git clone <repository-url>

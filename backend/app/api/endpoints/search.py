@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException
 from app.models.schemas import SearchQuery, SearchResponse, SearchResult
 from app.services.rag import RAGService, RAGError
 from app.services.config import Config
+from app.services.database import LAQDatabase
+from app.services.embeddings import EmbeddingService
 
 router = APIRouter()
 
@@ -22,15 +24,17 @@ async def search_laqs(query: SearchQuery):
     """
 
     try:
-        # Initialize RAG service
+        # Initialize services
         config = Config()
-        rag_service = RAGService(config)
+        database = LAQDatabase(config)
+        embedding_service = EmbeddingService(config)
+        rag_service = RAGService(config, database, embedding_service)
 
         # Perform search
         results = rag_service.search(
             query=query.query,
             top_k=query.top_k,
-            threshold=query.threshold
+            apply_threshold=True
         )
 
         # Convert to response model
@@ -39,7 +43,7 @@ async def search_laqs(query: SearchQuery):
                 question=result['metadata']['question'],
                 answer=result['metadata']['answer'],
                 metadata=result['metadata'],
-                similarity_score=result['score']
+                similarity_score=result['similarity']
             )
             for result in results
         ]

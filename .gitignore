@@ -60,7 +60,6 @@ htmlcov/
 
 # CLI reference (deprecated)
 cli.py
-main.py
 dashboard.html
 
 # Claude Code documentation (ignore in all directories)
