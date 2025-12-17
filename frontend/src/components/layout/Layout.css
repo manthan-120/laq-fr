@@ -1,25 +1,31 @@
+/* =====================================
+   MAIN LAYOUT – GOVERNMENT WEBSITE
+   ===================================== */
+
 .app-container {
   display: flex;
   min-height: 100vh;
+  background: var(--background-base);
 }
 
 .main-content {
   flex: 1;
-  margin-left: var(--sidebar-width);
   display: flex;
   flex-direction: column;
 }
 
 .content {
   flex: 1;
+  padding: var(--size-lg);
+  background: var(--background-base);
   overflow-y: auto;
-  padding: var(--size-xl);
 }
 
+/* Responsive Layout */
 @media (max-width: 768px) {
-  .main-content {
-    margin-left: 0;
-    margin-bottom: 72px;
+
+  .app-container {
+    flex-direction: column;
   }
 
   .content {

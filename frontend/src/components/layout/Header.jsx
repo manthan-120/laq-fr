@@ -1,5 +1,5 @@
 /**
- * Header component
+ * Header component – Government Style
  */
 
 import { useLocation } from 'react-router-dom'
@@ -10,20 +10,20 @@ function Header() {
 
   const getPageTitle = () => {
     const titles = {
-      '/': 'LAQ RAG Dashboard',
-      '/search': 'Search LAQs',
-      '/chat': 'Chat with LAQs',
-      '/upload': 'Upload PDF',
-      '/database': 'Database Info',
+      '/': 'Legislative Assembly Questions Dashboard',
+      '/search': 'Search & Filter LAQs',
+      '/chat': 'LAQ Decision Support Assistant',
+      '/upload': 'LAQ Document Intake',
+      '/database': 'Legislative Question Repository',
     }
-    return titles[location.pathname] || 'LAQ RAG Dashboard'
+    return titles[location.pathname] || 'Legislative Assembly Questions System'
   }
 
   return (
     <header className="header">
       <h1 className="header-title">{getPageTitle()}</h1>
       <div className="header-actions">
-        {/* Add header actions as needed */}
+        {/* Reserved for future official actions */}
       </div>
     </header>
   )

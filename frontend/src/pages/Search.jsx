@@ -1,7 +1,3 @@
-/**
- * Search page component
- */
-
 import { useState } from 'react'
 import { HiSearch, HiExclamation, HiDocumentText, HiUser, HiCalendar, HiTag } from 'react-icons/hi'
 import { searchLAQs } from '../services/api'
