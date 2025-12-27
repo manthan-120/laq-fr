@@ -1,7 +1,6 @@
 """RAG (Retrieval-Augmented Generation) operations for LAQ search and chat."""
 
 import json
-import math
 from typing import List, Dict, Tuple, Optional
 import ollama
 
@@ -53,12 +52,8 @@ class RAGService:
             raise ValueError("Query cannot be empty")
 
         try:
-            # Format query to match the enhanced embedding format used during storage
-            # This improves semantic matching by using the same format
-            formatted_query = f"Question: {query}\nAnswer: "
-
             # Generate query embedding
-            query_embedding = self.embeddings.embed_text(formatted_query)
+            query_embedding = self.embeddings.embed_text(query)
 
             # Search database
             results = self.db.search(query_embedding, n_results=top_k)
@@ -80,12 +75,7 @@ class RAGService:
             formatted_results = []
             for i, doc_id in enumerate(ids):
                 distance = distances[i]
-                # ChromaDB with "cosine" metric returns squared L2 distance on normalized vectors
-                # which is equivalent to: 2 * (1 - cosine_similarity)
-                # So: cosine_similarity = 1 - (distance / 2)
-                # Convert to percentage: similarity = (1 - distance/2) * 100
-                cosine_similarity = 1 - (distance / 2)
-                similarity = max(0, min(100, cosine_similarity * 100))
+                similarity = (1 - distance) * 100  # Convert to percentage
 
                 # Determine match quality
                 if similarity >= 80:

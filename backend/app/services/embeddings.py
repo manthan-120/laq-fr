@@ -69,8 +69,8 @@ class EmbeddingService:
             raise ValueError("Text cannot be empty")
 
         try:
-            response = ollama.embeddings(model=self.config.embedding_model, prompt=text)
-            return response["embedding"]
+            response = ollama.embed(model=self.config.embedding_model, input=text)
+            return response["embeddings"][0]
         except KeyError as e:
             raise OllamaModelNotFoundError(
                 f"Model '{self.config.embedding_model}' not found.\n"
@@ -84,12 +84,11 @@ class EmbeddingService:
         except Exception as e:
             raise EmbeddingError(f"Unexpected embedding error: {e}") from e
 
-    def embed_batch(self, texts: List[str], use_batch_api: bool = True) -> List[List[float]]:
-        """Generate embeddings for multiple texts with optimized processing.
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for multiple texts.
 
         Args:
             texts: List of texts to embed
-            use_batch_api: Reserved for future batch API support (currently uses sequential)
 
         Returns:
             List of embedding vectors
@@ -101,8 +100,6 @@ class EmbeddingService:
         if not texts:
             raise ValueError("Texts list cannot be empty")
 
-        # Note: ollama Python library doesn't support batch embeddings yet
-        # Process sequentially but keep parameter for future compatibility
         embeddings = []
         for i, text in enumerate(texts):
             try:
@@ -115,18 +112,11 @@ class EmbeddingService:
 
         return embeddings
 
-    def embed_qa_pairs(
-        self,
-        qa_pairs: List[dict],
-        laq_metadata: dict = None,
-        use_enhanced_context: bool = True
-    ) -> List[List[float]]:
-        """Generate embeddings for Q&A pairs with optional context enhancement.
+    def embed_qa_pairs(self, qa_pairs: List[dict]) -> List[List[float]]:
+        """Generate embeddings for Q&A pairs.
 
         Args:
             qa_pairs: List of dictionaries with 'question' and 'answer' keys
-            laq_metadata: Optional metadata (minister, date, laq_type, etc.) to enrich context
-            use_enhanced_context: Whether to include metadata in embedding for better quality
 
         Returns:
             List of embedding vectors
@@ -137,27 +127,8 @@ class EmbeddingService:
         if not qa_pairs:
             raise ValueError("Q&A pairs list cannot be empty")
 
-        texts = []
-        for qa in qa_pairs:
-            question = qa.get('question', '')
-            answer = qa.get('answer', '')
-
-            if use_enhanced_context and laq_metadata:
-                # Enhanced format with context for better semantic search
-                context_parts = []
-                if laq_metadata.get('laq_type'):
-                    context_parts.append(f"Type: {laq_metadata['laq_type']}")
-                if laq_metadata.get('minister'):
-                    context_parts.append(f"Minister: {laq_metadata['minister']}")
-                if laq_metadata.get('date'):
-                    context_parts.append(f"Date: {laq_metadata['date']}")
-
-                context = " | ".join(context_parts)
-                text = f"[{context}]\nQuestion: {question}\nAnswer: {answer}"
-            else:
-                # Simple format (backward compatible)
-                text = f"Q: {question}\nA: {answer}"
-
-            texts.append(text)
-
+        texts = [
+            f"Q: {qa.get('question', '')}\nA: {qa.get('answer', '')}"
+            for qa in qa_pairs
+        ]
         return self.embed_batch(texts)

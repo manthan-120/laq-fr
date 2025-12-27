@@ -7,8 +7,6 @@ from fastapi import APIRouter, HTTPException
 from app.models.schemas import ChatQuery, ChatResponse, SearchResult
 from app.services.rag import RAGService, RAGError
 from app.services.config import Config
-from app.services.database import LAQDatabase
-from app.services.embeddings import EmbeddingService
 
 router = APIRouter()
 
@@ -24,15 +22,13 @@ async def chat_with_laqs(query: ChatQuery):
     """
 
     try:
-        # Initialize services
+        # Initialize RAG service
         config = Config()
-        database = LAQDatabase(config)
-        embedding_service = EmbeddingService(config)
-        rag_service = RAGService(config, database, embedding_service)
+        rag_service = RAGService(config)
 
         # Perform chat
-        answer, source_results = rag_service.chat(
-            query=query.question,
+        response = rag_service.chat(
+            question=query.question,
             top_k=query.top_k
         )
 
@@ -42,14 +38,14 @@ async def chat_with_laqs(query: ChatQuery):
                 question=source['metadata']['question'],
                 answer=source['metadata']['answer'],
                 metadata=source['metadata'],
-                similarity_score=source['similarity']
+                similarity_score=source['score']
             )
-            for source in source_results
+            for source in response['sources']
         ]
 
         return ChatResponse(
             question=query.question,
-            answer=answer,
+            answer=response['answer'],
             sources=sources
         )
 

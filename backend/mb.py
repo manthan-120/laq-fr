@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import UploadFile, File
 
 app = FastAPI()
 
@@ -72,6 +73,18 @@ def search_laqs():
         ],
         "total_results": 1
     }
+
+# Mock /api/upload
+@app.post("/api/upload")
+async def upload_pdf(file: UploadFile = File(...)):
+    return {
+        "filename": file.filename,
+        "status": "uploaded",
+        "message": "Mock upload successful"
+    }
+
+
+
 
 # Mock /api/chat
 @app.post("/api/chat")

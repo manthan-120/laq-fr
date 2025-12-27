@@ -29,20 +29,14 @@ class Config:
     ollama_timeout: int = int(os.getenv("OLLAMA_TIMEOUT", "60"))
 
     # Retrieval settings
-    search_top_k: int = int(os.getenv("SEARCH_TOP_K", "10"))
-    chat_top_k: int = int(os.getenv("CHAT_TOP_K", "5"))
-    similarity_threshold: float = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
+    search_top_k: int = int(os.getenv("SEARCH_TOP_K", "5"))
+    chat_top_k: int = int(os.getenv("CHAT_TOP_K", "3"))
+    similarity_threshold: float = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))
 
     # Processing settings
-    markdown_chunk_size: int = int(os.getenv("MARKDOWN_CHUNK_SIZE", "20000"))  # Increased for better extraction
+    markdown_chunk_size: int = int(os.getenv("MARKDOWN_CHUNK_SIZE", "10000"))
     metadata_max_length: int = int(os.getenv("METADATA_MAX_LENGTH", "500"))
     max_context_tokens: int = int(os.getenv("MAX_CONTEXT_TOKENS", "2000"))
-
-    # Performance optimizations
-    use_batch_embeddings: bool = os.getenv("USE_BATCH_EMBEDDINGS", "true").lower() == "true"
-    use_enhanced_context: bool = os.getenv("USE_ENHANCED_CONTEXT", "true").lower() == "true"
-    cache_markdown_conversions: bool = os.getenv("CACHE_MARKDOWN", "true").lower() == "true"
-    skip_duplicate_pdfs: bool = os.getenv("SKIP_DUPLICATE_PDFS", "true").lower() == "true"
 
     # LLM generation settings
     llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
