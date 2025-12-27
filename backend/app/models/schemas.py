@@ -69,6 +69,15 @@ class UploadResponse(BaseModel):
     laq_data: Optional[LAQDataResponse] = None
 
 
+class AnnexureUploadResponse(BaseModel):
+    """Annexure upload response model."""
+    success: bool
+    message: str
+    laq_number: str
+    annexure_label: str
+    stored_id: str
+
+
 class DatabaseInfo(BaseModel):
     """Database information response."""
     collection_name: str

@@ -80,6 +80,9 @@ class LAQDatabase:
                 answer = qa.get("answer", "")
                 text = f"Q: {question}\nA: {answer}"
 
+                # Detect annexure references in the answer text
+                referenced_annexures = self._extract_annexure_labels(answer)
+
                 metadata = {
                     "pdf": pdf_name,
                     "pdf_title": laq_data.get("pdf_title", "N/A"),
@@ -91,6 +94,8 @@ class LAQDatabase:
                     "minister": laq_data.get("minister", "N/A"),
                     "date": laq_data.get("date", "N/A"),
                     "attachments": json.dumps(laq_data.get("attachments", [])),
+                    "tabled_by": laq_data.get("tabled_by", "N/A"),
+                    "referenced_annexures": json.dumps(referenced_annexures),
                 }
 
                 ids.append(doc_id)
@@ -116,6 +121,73 @@ class LAQDatabase:
                 raise DatabaseError(f"Batch insert failed: {e}") from e
 
         return 0
+
+    def store_annexure(
+        self,
+        laq_num: str,
+        pdf_name: str,
+        annexure_label: str,
+        content_text: str,
+        embedding: List[float],
+        extra_meta: Optional[Dict] = None,
+    ) -> str:
+        """Store annexure content as a separate document in the collection.
+
+        Returns the stored document ID.
+
+        Raises DatabaseError if insertion fails.
+        """
+        try:
+            base_id = f"{Path(pdf_name).stem}_{laq_num}_annex_{annexure_label.replace(' ', '_')}"
+            doc_id = base_id
+            # Ensure uniqueness
+            i = 1
+            while self._id_exists(doc_id):
+                i += 1
+                doc_id = f"{base_id}_{i}"
+
+            metadata = {
+                "pdf": pdf_name,
+                "laq_num": str(laq_num),
+                "type": "annexure",
+                "annexure_label": annexure_label,
+            }
+            if extra_meta:
+                metadata.update(extra_meta)
+
+            self.collection.add(
+                ids=[doc_id],
+                embeddings=[embedding],
+                metadatas=[metadata],
+                documents=[content_text],
+            )
+            return doc_id
+        except Exception as e:
+            raise DatabaseError(f"Failed to store annexure: {e}") from e
+
+    def get_annexures_for_laq(self, laq_num: str) -> Dict:
+        """Retrieve annexure documents for the given LAQ number."""
+        try:
+            where_clause = {"$and": [{"laq_num": str(laq_num)}, {"type": "annexure"}]}
+            return self.collection.get(
+                where=where_clause,
+                include=["metadatas", "documents"],
+            )
+        except Exception as e:
+            raise DatabaseError(f"Failed to fetch annexures: {e}") from e
+
+    def _extract_annexure_labels(self, text: str) -> List[str]:
+        """Heuristically extract annexure labels from text.
+
+        Examples: "Annexure - I", "Annexure-I", "Annexure II"
+        """
+        import re
+        if not text:
+            return []
+        pattern = re.compile(r"Annexure\s*[-–]?\s*([A-Za-z0-9]+)", re.IGNORECASE)
+        labels = pattern.findall(text)
+        # Normalize: strip spaces
+        return [lbl.strip() for lbl in labels]
 
     def search(
         self, query_embedding: List[float], n_results: Optional[int] = None

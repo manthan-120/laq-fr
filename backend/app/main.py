@@ -5,7 +5,7 @@ Provides REST API endpoints for PDF upload, search, and chat functionality.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import upload, search, chat, database
+from app.api.endpoints import upload, search, chat, database, annexure, annexure_list
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -29,6 +29,8 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
+app.include_router(annexure.router, prefix="/api/annexure", tags=["annexure"])
+app.include_router(annexure_list.router, prefix="/api/annexure", tags=["annexure"])
 app.include_router(search.router, prefix="/api/search", tags=["search"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(database.router, prefix="/api/database", tags=["database"])
