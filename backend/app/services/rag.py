@@ -101,6 +101,17 @@ class RAGService:
                 meta = metadatas[i]
                 doc = documents[i] if i < len(documents) else ""
 
+                # Attach annexure content (preview + full) to metadata for UI display
+                annexure_data = self._collect_annexure_content(
+                    laq_num=meta.get("laq_num", ""),
+                    referenced_raw=meta.get("referenced_annexures", "[]"),
+                    preview_chars=800,
+                )
+                if annexure_data["preview"] or annexure_data["full"]:
+                    meta = dict(meta)
+                    meta["annexure_content_preview"] = annexure_data["preview"]
+                    meta["annexure_content_full"] = annexure_data["full"]
+
                 formatted_results.append(
                     {
                         "id": doc_id,
@@ -185,18 +196,30 @@ class RAGService:
             # Parse attachments
             try:
                 attachments = json.loads(meta.get("attachments", "[]"))
-                attachments_text = (
-                    f"\nAttachments: {', '.join(attachments)}" if attachments else ""
-                )
-            except:
-                attachments_text = ""
+            except Exception:
+                attachments = []
+
+            annexure_content = self._collect_annexure_content(
+                laq_num=meta.get("laq_num", ""),
+                referenced_raw=meta.get("referenced_annexures", "[]"),
+                preview_chars=1000,
+            )["preview"]
+
+            attachments_text = (
+                f"\nAttachments: {', '.join(attachments)}" if attachments else ""
+            )
+            annexures_text_block = (
+                f"\n\nIncluded Annexure Content:\n" + "\n\n".join(annexure_content)
+                if annexure_content
+                else ""
+            )
 
             part = f"""
 LAQ #{meta.get('laq_num', 'N/A')} ({meta.get('type', 'N/A')}) - {meta.get('date', 'N/A')}
 Minister: {meta.get('minister', 'N/A')}
 Tabled by: {meta.get('tabled_by', 'N/A')}
 Question: {meta.get('question', 'N/A')}
-Answer: {meta.get('answer', 'N/A')}{attachments_text}
+Answer: {meta.get('answer', 'N/A')}{attachments_text}{annexures_text_block}
 """
             context_parts.append(part.strip())
 
@@ -234,6 +257,65 @@ USER QUESTION: {query}
 ANSWER:"""
 
         return prompt
+
+    def _collect_annexure_content(
+        self,
+        laq_num: str,
+        referenced_raw: Optional[object],
+        preview_chars: int = 800,
+    ) -> Dict[str, List[str]]:
+        """Fetch annexure content for referenced labels.
+
+        Returns a dict with preview (truncated) and full content lists.
+        """
+        try:
+            if referenced_raw is None:
+                return {"preview": [], "full": []}
+            if isinstance(referenced_raw, str):
+                referenced = json.loads(referenced_raw)
+            else:
+                referenced = referenced_raw
+        except Exception:
+            referenced = []
+
+        if not referenced:
+            return {"preview": [], "full": []}
+
+        try:
+            annexures = self.db.get_annexures_for_laq(laq_num)
+        except Exception:
+            return {"preview": [], "full": []}
+
+        def _norm(label: str) -> str:
+            # Normalize labels like "Annexure-I", "Annexure I", "I", "II" to a comparable key
+            if not label:
+                return ""
+            cleaned = label.lower().replace("annexure", "")
+            for ch in ["-", "_", ":", ";", ",", "."]:
+                cleaned = cleaned.replace(ch, " ")
+            cleaned = "".join(cleaned.split())
+            return cleaned
+
+        # Map normalized label -> document text (keep original too)
+        label_docs = {}
+        for idx, meta in enumerate(annexures.get("metadatas", [])):
+            if meta.get("type") == "annexure":
+                label = meta.get("annexure_label", "")
+                doc_text = annexures.get("documents", [[]])[idx]
+                if label:
+                    label_docs[_norm(label)] = doc_text
+                    label_docs[label] = doc_text
+
+        preview: List[str] = []
+        full: List[str] = []
+        for label in referenced:
+            key = _norm(label)
+            # Try normalized match first, then raw
+            doc_text = label_docs.get(key) or label_docs.get(label)
+            if doc_text:
+                preview.append(f"Annexure {label}:\n{doc_text[:preview_chars]}")
+                full.append(f"Annexure {label}:\n{doc_text}")
+        return {"preview": preview, "full": full}
 
     def get_match_quality_stats(self, results: List[Dict]) -> Dict[str, int]:
         """Get statistics about match quality distribution.
