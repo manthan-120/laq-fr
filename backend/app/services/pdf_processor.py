@@ -29,7 +29,7 @@ class LAQData(BaseModel):
     qa_pairs: List[QAPair] = Field(
         min_items=1, description="List of question-answer pairs"
     )
-    tabled_by: Optional[str] = Field(None, description="Person who tabled the question")
+    mla_name: Optional[str] = Field(None, description="Person who tabled the question")
     attachments: List[str] = Field(default_factory=list, description="List of attachments")
 
 
@@ -165,9 +165,9 @@ Your goal is to output **well-structured JSON** where:
   "pdf_title": "TENDER ISSUED FOR LEASING OF JETTY SPACE",
   "laq_type": "Starred",
   "laq_number": "010C",
-  "minister": "Shri. Aleixo Sequeira, Minister for Captain of Ports Department",
-  "tabled_by": "Shri Digambar Kamat",
+  "mla_name": "Shri Digambar Kamat",
   "date": "08-08-2025",
+  "minister": "Shri. Aleixo Sequeira",
   "qa_pairs": [
     {{
       "question": "(a) the details with the total number of jetty spots available in the river Mandovi for use by Casino and cruises vessels including location, area of use in sq.mt of all the individual jetty spots with details of all vessels that are using each particular jetty spot and the purpose of usage;",

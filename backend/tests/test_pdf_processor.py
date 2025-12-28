@@ -68,10 +68,10 @@ class TestLAQData:
             minister="Test Minister",
             date="2024-01-01",
             qa_pairs=[QAPair(question="Q?", answer="A")],
-            tabled_by="Test Person",
+            mla_name="Test Person",
             attachments=["Annex-1", "Annex-2"],
         )
-        assert laq.tabled_by == "Test Person"
+        assert laq.mla_name == "Test Person"
         assert len(laq.attachments) == 2
 
 

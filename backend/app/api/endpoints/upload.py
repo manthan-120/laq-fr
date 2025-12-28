@@ -64,10 +64,12 @@ async def upload_pdf(file: UploadFile = File(...)):
 
         # Prepare metadata for enhanced embeddings
         laq_metadata = {
+            'pdf_title': laq_data.pdf_title,
             'laq_type': laq_data.laq_type,
-            'minister': laq_data.minister,
+            'laq_number': laq_data.laq_number,
+            'mla_name': laq_data.mla_name,
             'date': laq_data.date,
-            'pdf_title': laq_data.pdf_title
+            'minister': laq_data.minister,
         }
 
         # Convert Q&A pairs to dict format
@@ -88,9 +90,9 @@ async def upload_pdf(file: UploadFile = File(...)):
             'pdf_title': laq_data.pdf_title,
             'laq_type': laq_data.laq_type,
             'laq_number': laq_data.laq_number,
-            'minister': laq_data.minister,
+            'mla_name': laq_data.mla_name,
             'date': laq_data.date,
-            'tabled_by': laq_data.tabled_by,
+            'minister': laq_data.minister,
             'attachments': laq_data.attachments,
             'qa_pairs': qa_pairs_dict
         }
@@ -114,7 +116,7 @@ async def upload_pdf(file: UploadFile = File(...)):
             minister=laq_data.minister,
             date=laq_data.date,
             qa_pairs=qa_pairs_response,
-            tabled_by=laq_data.tabled_by,
+            mla_name=laq_data.mla_name,
             attachments=laq_data.attachments
         )
 

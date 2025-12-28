@@ -72,7 +72,7 @@ function Search() {
                   <div className="result-metadata">
                     <span>
                       <HiTag />
-                      LAQ: {result.metadata.laq_num}
+                      LAQ: {result.metadata.laq_number}
                     </span>
                     <span>
                       <HiUser />

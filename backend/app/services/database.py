@@ -68,8 +68,8 @@ class LAQDatabase:
 
         for idx, (qa, embedding) in enumerate(zip(qa_pairs, embeddings_list), 1):
             try:
-                laq_num = laq_data.get("laq_number", "unknown")
-                doc_id = f"{Path(pdf_name).stem}_{laq_num}_qa{idx}"
+                laq_number = laq_data.get("laq_number", "unknown")
+                doc_id = f"{Path(pdf_name).stem}_{laq_number}_qa{idx}"
 
                 # Check for duplicate IDs
                 if self._id_exists(doc_id):
@@ -86,7 +86,7 @@ class LAQDatabase:
                 metadata = {
                     "pdf": pdf_name,
                     "pdf_title": laq_data.get("pdf_title", "N/A"),
-                    "laq_num": str(laq_num),
+                    "laq_number": str(laq_number),
                     "qa_pair_num": str(idx),
                     "type": laq_data.get("laq_type", "N/A"),
                     "question": question[: self.config.metadata_max_length],
@@ -94,7 +94,7 @@ class LAQDatabase:
                     "minister": laq_data.get("minister", "N/A"),
                     "date": laq_data.get("date", "N/A"),
                     "attachments": json.dumps(laq_data.get("attachments", [])),
-                    "tabled_by": laq_data.get("tabled_by", "N/A"),
+                    "mla_name": laq_data.get("mla_name", "N/A"),
                     "referenced_annexures": json.dumps(referenced_annexures),
                 }
 
@@ -124,7 +124,7 @@ class LAQDatabase:
 
     def store_annexure(
         self,
-        laq_num: str,
+        laq_number: str,
         pdf_name: str,
         annexure_label: str,
         content_text: str,
@@ -138,7 +138,7 @@ class LAQDatabase:
         Raises DatabaseError if insertion fails.
         """
         try:
-            base_id = f"{Path(pdf_name).stem}_{laq_num}_annex_{annexure_label.replace(' ', '_')}"
+            base_id = f"{Path(pdf_name).stem}_{laq_number}_annex_{annexure_label.replace(' ', '_')}"
             doc_id = base_id
             # Ensure uniqueness
             i = 1
@@ -148,7 +148,7 @@ class LAQDatabase:
 
             metadata = {
                 "pdf": pdf_name,
-                "laq_num": str(laq_num),
+                "laq_number": str(laq_number),
                 "type": "annexure",
                 "annexure_label": annexure_label,
             }
@@ -165,10 +165,10 @@ class LAQDatabase:
         except Exception as e:
             raise DatabaseError(f"Failed to store annexure: {e}") from e
 
-    def get_annexures_for_laq(self, laq_num: str) -> Dict:
+    def get_annexures_for_laq(self, laq_number: str) -> Dict:
         """Retrieve annexure documents for the given LAQ number."""
         try:
-            where_clause = {"$and": [{"laq_num": str(laq_num)}, {"type": "annexure"}]}
+            where_clause = {"$and": [{"laq_number": str(laq_number)}, {"type": "annexure"}]}
             return self.collection.get(
                 where=where_clause,
                 include=["metadatas", "documents"],

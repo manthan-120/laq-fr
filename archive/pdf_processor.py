@@ -24,12 +24,13 @@ class LAQData(BaseModel):
     pdf_title: str = Field(description="Title of the LAQ document")
     laq_type: str = Field(description="Type of LAQ (e.g., Starred, Unstarred)")
     laq_number: str = Field(description="LAQ identification number")
-    minister: str = Field(description="Name of the minister")
+    # mla_name: str = Field(description="Name of the MLA who tabled the question")
+    mla_name: Optional[str] = Field(None, description="Person who tabled the question")
     date: str = Field(description="Date of the LAQ")
+    minister: str = Field(description="Name of the minister")
     qa_pairs: List[QAPair] = Field(
         min_items=1, description="List of question-answer pairs"
     )
-    tabled_by: Optional[str] = Field(None, description="Person who tabled the question")
     attachments: List[str] = Field(default_factory=list, description="List of attachments")
 
 

@@ -42,9 +42,12 @@ function Upload() {
   }
 
   const handleFile = (selectedFile) => {
-    // Validate file type
-    if (!selectedFile.name.toLowerCase().endsWith('.pdf')) {
-      setUploadError('Please select a PDF file')
+    // Validate file type - allow PDF and Word documents
+    const validExtensions = ['.pdf', '.doc', '.docx'];
+    const fileExtension = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf('.'));
+    
+    if (!validExtensions.includes(fileExtension)) {
+      setUploadError('Please select a PDF or Word document (.pdf, .doc, .docx)')
       return
     }
 
@@ -111,7 +114,7 @@ function Upload() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf"
+            accept=".pdf,.doc,.docx"
             onChange={handleFileInput}
             style={{ display: 'none' }}
           />
@@ -121,8 +124,8 @@ function Upload() {
               <div className="upload-icon">
                 <HiCloudUpload />
               </div>
-              <div className="upload-title">Drop file here or click to browse</div>
-              <div className="upload-subtitle">Supports LAQ PDFs up to 50MB</div>
+              <div className="upload-title">Drop PDF or Word file here or click to browse</div>
+              <div className="upload-subtitle">Supports PDF and Word documents (.pdf, .doc, .docx) up to 50MB</div>
             </>
           ) : (
             <div className="file-preview">
@@ -230,9 +233,7 @@ function Upload() {
             </div>
           </div>
         )}
-
-        {/* Info Section */}
-       
+        
       </div>
     </div>
   )

@@ -144,8 +144,8 @@ function Dashboard() {
           </thead>
           <tbody>
             {filteredLaqs.map(l => (
-              <tr key={l.laq_no}>
-                <td>{l.laq_no}</td>
+              <tr key={l.laq_number}>
+                <td>{l.laq_number}</td>
                 <td>{l.year}</td>
                 <td>{l.mla_name}</td>
                 <td>{l.department}</td>

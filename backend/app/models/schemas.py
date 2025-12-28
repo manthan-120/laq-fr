@@ -18,10 +18,10 @@ class LAQDataResponse(BaseModel):
     pdf_title: str
     laq_type: str
     laq_number: str
-    minister: str
+    mla_name: Optional[str] = None
     date: str
+    minister: str
     qa_pairs: List[QAPairResponse]
-    tabled_by: Optional[str] = None
     attachments: List[str] = Field(default_factory=list)
 
 
