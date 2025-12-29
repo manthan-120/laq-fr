@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Verified no hardcoded secrets in codebase
 - Enhanced .gitignore for comprehensive coverage
+- Updated python-multipart from 0.0.6 to 0.0.9 (fixes DoS vulnerabilities)
+- Updated tqdm from 4.66.1 to 4.66.4 (fixes CLI argument vulnerability)
 
 ## [1.0.0] - 2025-12-29
 
