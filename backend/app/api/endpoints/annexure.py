@@ -20,7 +20,7 @@ async def upload_annexure(
     laq_number: str = Form(...),
     pdf_name: str = Form(...),
     annexure_label: str = Form(None),
-):
+) -> AnnexureUploadResponse:
     """
     Upload and process an annexure Excel file (.xls/.xlsx) for a specific LAQ.
 

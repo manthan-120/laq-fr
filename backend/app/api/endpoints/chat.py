@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.post("/", response_model=ChatResponse)
-async def chat_with_laqs(query: ChatQuery):
+async def chat_with_laqs(query: ChatQuery) -> ChatResponse:
     """
     Chat with LAQ knowledge base.
 

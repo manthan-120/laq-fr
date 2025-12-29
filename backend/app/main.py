@@ -50,7 +50,7 @@ app.include_router(validation.router, prefix="/api/validation", tags=["validatio
 
 
 @app.get("/")
-async def root():
+async def root() -> dict:
     """Root endpoint - health check."""
     return {
         "message": "LAQ RAG API is running",
@@ -60,7 +60,7 @@ async def root():
 
 
 @app.get("/api/health")
-async def health_check():
+async def health_check() -> dict:
     """Health check endpoint."""
     ollama_status = False
     db_status = False

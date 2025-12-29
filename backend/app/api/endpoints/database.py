@@ -21,7 +21,7 @@ class ClearResponse(BaseModel):
 
 
 @router.get("/info", response_model=DatabaseInfo)
-async def get_database_info():
+async def get_database_info() -> DatabaseInfo:
     """
     Get database information and statistics.
 
@@ -55,7 +55,7 @@ async def get_database_info():
 
 
 @router.delete("/clear", response_model=ClearResponse)
-async def clear_database():
+async def clear_database() -> ClearResponse:
     """
     Clear all data from the database.
 

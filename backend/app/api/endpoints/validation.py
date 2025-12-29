@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/laq/{laq_number}", response_model=ValidationReport)
 async def validate_laq_references(
     laq_number: str, pdf_name: str = Query(..., description="PDF name to validate")
-):
+) -> ValidationReport:
     """Validate annexure references for a specific LAQ.
 
     Returns validation report showing missing and unreferenced annexures.
@@ -29,7 +29,7 @@ async def validate_laq_references(
 
 
 @router.get("/all", response_model=ValidationSummary)
-async def validate_all_laqs():
+async def validate_all_laqs() -> ValidationSummary:
     """Validate annexure references for all LAQs in the database.
 
     Returns summary report for all LAQs.
@@ -46,7 +46,7 @@ async def validate_all_laqs():
 
 
 @router.get("/stats", response_model=AnnexureUsageStats)
-async def get_annexure_usage_stats():
+async def get_annexure_usage_stats() -> AnnexureUsageStats:
     """Get statistics about annexure usage across all LAQs.
 
     Returns usage statistics and reference analysis.

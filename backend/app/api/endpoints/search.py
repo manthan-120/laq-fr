@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.post("/", response_model=SearchResponse)
-async def search_laqs(query: SearchQuery):
+async def search_laqs(query: SearchQuery) -> SearchResponse:
     """
     Perform semantic search on LAQ database.
 
