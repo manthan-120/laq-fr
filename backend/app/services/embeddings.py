@@ -1,6 +1,7 @@
 """Embedding generation using Ollama for the LAQ RAG system."""
 
 from typing import List
+
 import ollama
 
 from app.services.config import Config
@@ -8,16 +9,19 @@ from app.services.config import Config
 
 class EmbeddingError(Exception):
     """Raised when embedding generation fails."""
+
     pass
 
 
 class OllamaConnectionError(EmbeddingError):
     """Raised when cannot connect to Ollama."""
+
     pass
 
 
 class OllamaModelNotFoundError(EmbeddingError):
     """Raised when the embedding model is not found."""
+
     pass
 
 
@@ -84,7 +88,9 @@ class EmbeddingService:
         except Exception as e:
             raise EmbeddingError(f"Unexpected embedding error: {e}") from e
 
-    def embed_batch(self, texts: List[str], use_batch_api: bool = True) -> List[List[float]]:
+    def embed_batch(
+        self, texts: List[str], use_batch_api: bool = True
+    ) -> List[List[float]]:
         """Generate embeddings for multiple texts with optimized processing.
 
         Args:
@@ -119,7 +125,7 @@ class EmbeddingService:
         self,
         qa_pairs: List[dict],
         laq_metadata: dict = None,
-        use_enhanced_context: bool = True
+        use_enhanced_context: bool = True,
     ) -> List[List[float]]:
         """Generate embeddings for Q&A pairs with optional context enhancement.
 
@@ -139,17 +145,17 @@ class EmbeddingService:
 
         texts = []
         for qa in qa_pairs:
-            question = qa.get('question', '')
-            answer = qa.get('answer', '')
+            question = qa.get("question", "")
+            answer = qa.get("answer", "")
 
             if use_enhanced_context and laq_metadata:
                 # Enhanced format with context for better semantic search
                 context_parts = []
-                if laq_metadata.get('laq_type'):
+                if laq_metadata.get("laq_type"):
                     context_parts.append(f"Type: {laq_metadata['laq_type']}")
-                if laq_metadata.get('minister'):
+                if laq_metadata.get("minister"):
                     context_parts.append(f"Minister: {laq_metadata['minister']}")
-                if laq_metadata.get('date'):
+                if laq_metadata.get("date"):
                     context_parts.append(f"Date: {laq_metadata['date']}")
 
                 context = " | ".join(context_parts)

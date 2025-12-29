@@ -1,6 +1,19 @@
-# LAQ RAG System - Production Web Application
+# LAQ RAG System
 
-A minimal, privacy-friendly Retrieval-Augmented Generation (RAG) system that runs entirely locally without external API calls. The system processes Legislative Assembly Question (LAQ) PDFs, extracts Q&A pairs using LLMs, stores them in a vector database, and enables semantic search and chat interactions through a modern web interface.
+A privacy-preserving, locally-executable Retrieval-Augmented Generation (RAG) system for Legislative Assembly Questions (LAQs). Built for secure, offline document processing with modern AI capabilities.
+
+## 🎯 Problem Statement
+
+Government legislative documents are often inaccessible and difficult to query. LAQ PDFs contain critical Q&A data that citizens, researchers, and officials need to access efficiently. Traditional search methods fail on unstructured PDF content, while cloud-based solutions compromise data privacy and sovereignty.
+
+## 💡 Solution
+
+LAQ RAG provides:
+- **Offline Processing**: Runs entirely on local hardware with no data transmission
+- **AI-Powered Extraction**: Uses LLMs to structure unstructured PDF content into searchable Q&A pairs
+- **Vector Search**: Semantic similarity matching for natural language queries
+- **Modern Web Interface**: Responsive dashboard with search, chat, and data visualization
+- **Production-Ready**: Containerized deployment with enterprise-grade architecture
 
 ## 🏗️ Architecture
 

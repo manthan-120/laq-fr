@@ -4,7 +4,8 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -56,6 +57,12 @@ export const getDatabaseInfo = async () => {
 
 export const clearDatabase = async () => {
   const response = await api.delete('/api/database/clear');
+  return response.data;
+};
+
+// ✅ NEW: Fetch all LAQs for Dashboard
+export const getAllLAQs = async () => {
+  const response = await api.get('/api/laqs');
   return response.data;
 };
 

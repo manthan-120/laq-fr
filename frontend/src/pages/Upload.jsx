@@ -121,7 +121,7 @@ function Upload() {
               <div className="upload-icon">
                 <HiCloudUpload />
               </div>
-              <div className="upload-title">Drop PDF file here or click to browse</div>
+              <div className="upload-title">Drop file here or click to browse</div>
               <div className="upload-subtitle">Supports LAQ PDFs up to 50MB</div>
             </>
           ) : (
@@ -232,39 +232,7 @@ function Upload() {
         )}
 
         {/* Info Section */}
-        <div className="upload-info">
-          <h3 className="info-title">What happens when you upload?</h3>
-          <div className="info-steps">
-            <div className="info-step">
-              <div className="step-number">1</div>
-              <div className="step-content">
-                <div className="step-title">PDF Processing</div>
-                <div className="step-description">Convert PDF to structured markdown</div>
-              </div>
-            </div>
-            <div className="info-step">
-              <div className="step-number">2</div>
-              <div className="step-content">
-                <div className="step-title">LLM Extraction</div>
-                <div className="step-description">Extract Q&A pairs using Mistral</div>
-              </div>
-            </div>
-            <div className="info-step">
-              <div className="step-number">3</div>
-              <div className="step-content">
-                <div className="step-title">Generate Embeddings</div>
-                <div className="step-description">Create vector embeddings for semantic search</div>
-              </div>
-            </div>
-            <div className="info-step">
-              <div className="step-number">4</div>
-              <div className="step-content">
-                <div className="step-title">Store in Database</div>
-                <div className="step-description">Save to ChromaDB for fast retrieval</div>
-              </div>
-            </div>
-          </div>
-        </div>
+       
       </div>
     </div>
   )
