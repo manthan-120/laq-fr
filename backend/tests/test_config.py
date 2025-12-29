@@ -24,10 +24,14 @@ class TestConfig:
 
     def test_similarity_threshold_validation(self):
         """Test that invalid similarity thresholds raise errors."""
-        with pytest.raises(ValueError, match="similarity_threshold must be between 0 and 1"):
+        with pytest.raises(
+            ValueError, match="similarity_threshold must be between 0 and 1"
+        ):
             Config(similarity_threshold=1.5)
 
-        with pytest.raises(ValueError, match="similarity_threshold must be between 0 and 1"):
+        with pytest.raises(
+            ValueError, match="similarity_threshold must be between 0 and 1"
+        ):
             Config(similarity_threshold=-0.1)
 
     def test_top_k_validation(self):

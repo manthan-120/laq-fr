@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './Validation.css';
 
 const Validation = () => {
@@ -244,7 +244,7 @@ const Validation = () => {
                 {usageStats.referenced_but_missing.length > 0 && (
                   <div className="anomaly-section">
                     <h4>❌ Missing Annexures</h4>
-                    <p>These annexures are referenced in LAQs but don't exist:</p>
+                    <p>These annexures are referenced in LAQs but don&#39;t exist:</p>
                     <div className="anomaly-list">
                       {usageStats.referenced_but_missing.map(annexure => (
                         <span key={annexure} className="anomaly-item">{annexure}</span>

@@ -14,6 +14,7 @@ router = APIRouter()
 
 class ClearResponse(BaseModel):
     """Response model for clear database operation."""
+
     success: bool
     message: str
     documents_deleted: int
@@ -44,7 +45,7 @@ async def get_database_info():
             database_path=str(config.db_path),
             similarity_metric="cosine",
             embedding_model=config.embedding_model,
-            llm_model=config.llm_model
+            llm_model=config.llm_model,
         )
 
     except DatabaseError as e:
@@ -77,10 +78,12 @@ async def clear_database():
         return ClearResponse(
             success=True,
             message=f"Successfully cleared database. Deleted {count_before} documents.",
-            documents_deleted=count_before
+            documents_deleted=count_before,
         )
 
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to clear database: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to clear database: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")

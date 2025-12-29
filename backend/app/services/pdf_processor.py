@@ -30,11 +30,14 @@ class LAQData(BaseModel):
         min_items=1, description="List of question-answer pairs"
     )
     tabled_by: Optional[str] = Field(None, description="Person who tabled the question")
-    attachments: List[str] = Field(default_factory=list, description="List of attachments")
+    attachments: List[str] = Field(
+        default_factory=list, description="List of attachments"
+    )
 
 
 class PDFProcessingError(Exception):
     """Raised when PDF processing fails."""
+
     pass
 
 
@@ -71,22 +74,24 @@ class PDFProcessor:
         stem = Path(filename).stem.lower()
 
         # Pattern 1: replylaqno format (e.g., "reply123" -> "123")
-        reply_match = re.search(r'reply(\d+[a-z]?)', stem, re.IGNORECASE)
+        reply_match = re.search(r"reply(\d+[a-z]?)", stem, re.IGNORECASE)
         if reply_match:
             return reply_match.group(1).upper()
 
         # Pattern 2: Direct number at start (e.g., "123abc" -> "123ABC")
-        number_match = re.match(r'^(\d+[a-z]?)', stem)
+        number_match = re.match(r"^(\d+[a-z]?)", stem)
         if number_match:
             return number_match.group(1).upper()
 
         # Pattern 3: Common prefixes like laq_, laqno_, etc.
-        prefix_match = re.search(r'(?:laq|laqno|question)[_-]?(\d+[a-z]?)', stem, re.IGNORECASE)
+        prefix_match = re.search(
+            r"(?:laq|laqno|question)[_-]?(\d+[a-z]?)", stem, re.IGNORECASE
+        )
         if prefix_match:
             return prefix_match.group(1).upper()
 
         # Pattern 4: Any number in filename
-        any_number = re.search(r'(\d+[a-z]?)', stem)
+        any_number = re.search(r"(\d+[a-z]?)", stem)
         if any_number:
             return any_number.group(1).upper()
 
@@ -121,11 +126,15 @@ class PDFProcessor:
         # Check file size (warn if > 10MB)
         size_mb = path.stat().st_size / (1024 * 1024)
         if size_mb > 10:
-            print(f"⚠️ Large file detected ({size_mb:.1f} MB). Processing may take time.")
+            print(
+                f"⚠️ Large file detected ({size_mb:.1f} MB). Processing may take time."
+            )
 
         return path
 
-    def extract_markdown_from_pdf(self, pdf_path: Path, cache_result: bool = True) -> str:
+    def extract_markdown_from_pdf(
+        self, pdf_path: Path, cache_result: bool = True
+    ) -> str:
         """Convert PDF to markdown using Docling with optional caching.
 
         Args:
@@ -147,13 +156,13 @@ class PDFProcessor:
             cache_dir.mkdir(parents=True, exist_ok=True)
 
             # Generate cache key from file hash
-            with open(pdf_path, 'rb') as f:
+            with open(pdf_path, "rb") as f:
                 file_hash = hashlib.md5(f.read()).hexdigest()
             cache_file = cache_dir / f"{pdf_path.stem}_{file_hash}.md"
 
             if cache_file.exists():
                 print(f"✅ Using cached markdown conversion")
-                return cache_file.read_text(encoding='utf-8')
+                return cache_file.read_text(encoding="utf-8")
 
         try:
             print(f"🔄 Converting PDF to markdown...")
@@ -163,16 +172,16 @@ class PDFProcessor:
 
             # Cache the result
             if cache_result:
-                cache_file.write_text(markdown_data, encoding='utf-8')
+                cache_file.write_text(markdown_data, encoding="utf-8")
                 print(f"💾 Cached markdown conversion")
 
             return markdown_data
         except Exception as e:
-            raise PDFProcessingError(
-                f"Failed to convert PDF to markdown: {e}"
-            ) from e
+            raise PDFProcessingError(f"Failed to convert PDF to markdown: {e}") from e
 
-    def structure_laqs_with_mistral(self, markdown_data: str, pdf_path: Path) -> LAQData:
+    def structure_laqs_with_mistral(
+        self, markdown_data: str, pdf_path: Path
+    ) -> LAQData:
         """Use Mistral LLM to extract structured LAQ data from markdown.
 
         Args:
@@ -269,9 +278,7 @@ Now extract the structured data in this format from the following text:
                 print(f"✅ Successfully extracted {len(laq_data.qa_pairs)} Q&A pairs")
                 return laq_data
             except ValidationError as e:
-                raise PDFProcessingError(
-                    f"Invalid LAQ data structure:\n{e}"
-                ) from e
+                raise PDFProcessingError(f"Invalid LAQ data structure:\n{e}") from e
 
         except Exception as e:
             if isinstance(e, PDFProcessingError):
@@ -308,7 +315,9 @@ Now extract the structured data in this format from the following text:
 
         # Step 5: Override LAQ number with filename extraction if available
         if filename_laq_number:
-            print(f"🔄 Overriding LLM-extracted LAQ number '{laq_data.laq_number}' with filename-based '{filename_laq_number}'")
+            print(
+                f"🔄 Overriding LLM-extracted LAQ number '{laq_data.laq_number}' with filename-based '{filename_laq_number}'"
+            )
             # Create new LAQData with filename-based LAQ number
             laq_data = LAQData(
                 pdf_title=laq_data.pdf_title,
@@ -318,7 +327,7 @@ Now extract the structured data in this format from the following text:
                 date=laq_data.date,
                 qa_pairs=laq_data.qa_pairs,
                 tabled_by=laq_data.tabled_by,
-                attachments=laq_data.attachments
+                attachments=laq_data.attachments,
             )
 
         return laq_data

@@ -11,6 +11,7 @@ from app.services.config import Config
 
 class DatabaseError(Exception):
     """Raised when database operations fail."""
+
     pass
 
 
@@ -182,6 +183,7 @@ class LAQDatabase:
         Examples: "Annexure - I", "Annexure-I", "Annexure II"
         """
         import re
+
         if not text:
             return []
         # More specific pattern: "Annexure" (exactly, not "annexures") followed by optional separator and label
@@ -318,7 +320,9 @@ class LAQDatabase:
             if laq_number:
                 # Check for specific LAQ number
                 doc_id_prefix = f"{Path(pdf_name).stem}_{laq_number}_qa"
-                result = self.collection.get(where={"pdf": pdf_name, "laq_num": str(laq_number)})
+                result = self.collection.get(
+                    where={"pdf": pdf_name, "laq_num": str(laq_number)}
+                )
             else:
                 # Check for any documents from this PDF
                 result = self.collection.get(where={"pdf": pdf_name})

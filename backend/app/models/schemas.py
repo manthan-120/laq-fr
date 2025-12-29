@@ -9,12 +9,14 @@ from pydantic import BaseModel, Field
 # Request/Response Models
 class QAPairResponse(BaseModel):
     """Q&A pair response model."""
+
     question: str
     answer: str
 
 
 class LAQDataResponse(BaseModel):
     """LAQ data response model."""
+
     pdf_title: str
     laq_type: str
     laq_number: str
@@ -27,13 +29,19 @@ class LAQDataResponse(BaseModel):
 
 class SearchQuery(BaseModel):
     """Search query request model."""
+
     query: str = Field(..., min_length=1, description="Search query text")
-    top_k: Optional[int] = Field(5, ge=1, le=20, description="Number of results to return")
-    threshold: Optional[float] = Field(0.6, ge=0.0, le=1.0, description="Similarity threshold")
+    top_k: Optional[int] = Field(
+        5, ge=1, le=20, description="Number of results to return"
+    )
+    threshold: Optional[float] = Field(
+        0.6, ge=0.0, le=1.0, description="Similarity threshold"
+    )
 
 
 class SearchResult(BaseModel):
     """Single search result."""
+
     question: str
     answer: str
     metadata: dict
@@ -42,6 +50,7 @@ class SearchResult(BaseModel):
 
 class SearchResponse(BaseModel):
     """Search results response."""
+
     query: str
     results: List[SearchResult]
     total_results: int
@@ -49,12 +58,14 @@ class SearchResponse(BaseModel):
 
 class ChatQuery(BaseModel):
     """Chat query request model."""
+
     question: str = Field(..., min_length=1, description="User question")
     top_k: Optional[int] = Field(5, ge=1, le=20, description="Number of context LAQs")
 
 
 class ChatResponse(BaseModel):
     """Chat response model."""
+
     question: str
     answer: str
     sources: List[SearchResult]
@@ -62,6 +73,7 @@ class ChatResponse(BaseModel):
 
 class UploadResponse(BaseModel):
     """PDF upload response model."""
+
     success: bool
     message: str
     pdf_name: str
@@ -71,6 +83,7 @@ class UploadResponse(BaseModel):
 
 class AnnexureUploadResponse(BaseModel):
     """Annexure upload response model."""
+
     success: bool
     message: str
     laq_number: str
@@ -80,6 +93,7 @@ class AnnexureUploadResponse(BaseModel):
 
 class DatabaseInfo(BaseModel):
     """Database information response."""
+
     collection_name: str
     total_documents: int
     database_path: str
@@ -90,6 +104,7 @@ class DatabaseInfo(BaseModel):
 
 class HealthCheck(BaseModel):
     """Health check response."""
+
     status: str
     ollama_running: bool
     database: str
@@ -97,6 +112,7 @@ class HealthCheck(BaseModel):
 
 class ValidationReport(BaseModel):
     """Validation report for a single LAQ."""
+
     laq_number: str
     pdf_name: str
     total_laq_documents: int
@@ -111,6 +127,7 @@ class ValidationReport(BaseModel):
 
 class ValidationSummary(BaseModel):
     """Summary validation report for all LAQs."""
+
     total_laqs_validated: int
     total_with_issues: int
     validation_reports: List[ValidationReport]
@@ -119,6 +136,7 @@ class ValidationSummary(BaseModel):
 
 class AnnexureUsageStats(BaseModel):
     """Annexure usage statistics."""
+
     total_annexure_documents: int
     unique_annexure_labels: int
     total_references_in_laqs: int

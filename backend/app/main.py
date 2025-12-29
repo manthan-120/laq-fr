@@ -5,7 +5,15 @@ Provides REST API endpoints for PDF upload, search, and chat functionality.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import upload, search, chat, database, annexure, annexure_list, validation
+from app.api.endpoints import (
+    upload,
+    search,
+    chat,
+    database,
+    annexure,
+    annexure_list,
+    validation,
+)
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -15,13 +23,16 @@ app = FastAPI(
     description="Retrieval-Augmented Generation API for Legislative Assembly Questions",
     version="1.0.0",
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
 )
 
 # CORS middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React dev servers
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ],  # React dev servers
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,7 +54,7 @@ async def root():
     return {
         "message": "LAQ RAG API is running",
         "version": "1.0.0",
-        "docs": "/api/docs"
+        "docs": "/api/docs",
     }
 
 
@@ -56,6 +67,7 @@ async def health_check():
     try:
         # Check Ollama connection
         import ollama
+
         ollama.list()
         ollama_status = True
     except Exception:
@@ -64,6 +76,7 @@ async def health_check():
     try:
         # Check database connection
         from app.services.database import LAQDatabase
+
         db = LAQDatabase(settings)
         db.get_count()  # Simple operation to verify connection
         db_status = True
@@ -75,5 +88,5 @@ async def health_check():
     return {
         "status": overall_status,
         "ollama_running": ollama_status,
-        "database": "connected" if db_status else "disconnected"
+        "database": "connected" if db_status else "disconnected",
     }

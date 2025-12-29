@@ -10,6 +10,7 @@ from app.services.database import LAQDatabase, DatabaseError
 
 class ValidationError(Exception):
     """Raised when validation fails."""
+
     pass
 
 
@@ -38,12 +39,14 @@ class ValidationService:
         try:
             # Get LAQ documents for this number and PDF
             laq_results = self.db.collection.get(
-                where={"$and": [
-                    {"laq_num": str(laq_number)},
-                    {"pdf": pdf_name},
-                    {"type": {"$ne": "annexure"}}  # Exclude annexures
-                ]},
-                include=["metadatas", "documents"]
+                where={
+                    "$and": [
+                        {"laq_num": str(laq_number)},
+                        {"pdf": pdf_name},
+                        {"type": {"$ne": "annexure"}},  # Exclude annexures
+                    ]
+                },
+                include=["metadatas", "documents"],
             )
 
             # Get available annexures for this LAQ
@@ -81,15 +84,39 @@ class ValidationService:
                 "available_annexures": sorted(list(available_annexures)),
                 "missing_annexures": sorted(list(missing_annexures)),
                 "unreferenced_annexures": sorted(list(unreferenced_annexures)),
-                "validation_status": "valid" if not missing_annexures and not unreferenced_annexures else "invalid",
+                "validation_status": (
+                    "valid"
+                    if not missing_annexures and not unreferenced_annexures
+                    else "invalid"
+                ),
                 "issues": [
-                    f"Missing annexure(s): {', '.join(sorted(missing_annexures))}" if missing_annexures else None,
-                    f"Unreferenced annexure(s): {', '.join(sorted(unreferenced_annexures))}" if unreferenced_annexures else None,
+                    (
+                        f"Missing annexure(s): {', '.join(sorted(missing_annexures))}"
+                        if missing_annexures
+                        else None
+                    ),
+                    (
+                        f"Unreferenced annexure(s): {', '.join(sorted(unreferenced_annexures))}"
+                        if unreferenced_annexures
+                        else None
+                    ),
                 ],
-                "issues": [issue for issue in [
-                    f"Missing annexure(s): {', '.join(sorted(missing_annexures))}" if missing_annexures else None,
-                    f"Unreferenced annexure(s): {', '.join(sorted(unreferenced_annexures))}" if unreferenced_annexures else None,
-                ] if issue is not None]
+                "issues": [
+                    issue
+                    for issue in [
+                        (
+                            f"Missing annexure(s): {', '.join(sorted(missing_annexures))}"
+                            if missing_annexures
+                            else None
+                        ),
+                        (
+                            f"Unreferenced annexure(s): {', '.join(sorted(unreferenced_annexures))}"
+                            if unreferenced_annexures
+                            else None
+                        ),
+                    ]
+                    if issue is not None
+                ],
             }
 
         except DatabaseError as e:
@@ -106,8 +133,7 @@ class ValidationService:
         try:
             # Get all LAQ documents (excluding annexures)
             all_results = self.db.collection.get(
-                where={"type": {"$ne": "annexure"}},
-                include=["metadatas"]
+                where={"type": {"$ne": "annexure"}}, include=["metadatas"]
             )
 
             # Group by LAQ number and PDF
@@ -126,8 +152,7 @@ class ValidationService:
 
             for group in laq_groups.values():
                 report = self.validate_laq_annexure_references(
-                    group["laq_number"],
-                    group["pdf_name"]
+                    group["laq_number"], group["pdf_name"]
                 )
                 validation_reports.append(report)
                 if report["validation_status"] == "invalid":
@@ -140,8 +165,8 @@ class ValidationService:
                 "summary": {
                     "valid_laqs": len(validation_reports) - total_issues,
                     "invalid_laqs": total_issues,
-                    "overall_status": "valid" if total_issues == 0 else "invalid"
-                }
+                    "overall_status": "valid" if total_issues == 0 else "invalid",
+                },
             }
 
         except Exception as e:
@@ -156,8 +181,7 @@ class ValidationService:
         try:
             # Get all LAQ documents
             laq_results = self.db.collection.get(
-                where={"type": {"$ne": "annexure"}},
-                include=["metadatas"]
+                where={"type": {"$ne": "annexure"}}, include=["metadatas"]
             )
 
             # Count annexure references
@@ -176,8 +200,7 @@ class ValidationService:
 
             # Get available annexures
             annexure_results = self.db.collection.get(
-                where={"type": "annexure"},
-                include=["metadatas"]
+                where={"type": "annexure"}, include=["metadatas"]
             )
 
             available_annexures = set()
@@ -192,8 +215,12 @@ class ValidationService:
                 "total_references_in_laqs": total_references,
                 "unique_referenced_annexures": len(annexure_usage),
                 "annexure_usage_breakdown": dict(sorted(annexure_usage.items())),
-                "unreferenced_annexures": sorted(list(available_annexures - set(annexure_usage.keys()))),
-                "referenced_but_missing": sorted(list(set(annexure_usage.keys()) - available_annexures))
+                "unreferenced_annexures": sorted(
+                    list(available_annexures - set(annexure_usage.keys()))
+                ),
+                "referenced_but_missing": sorted(
+                    list(set(annexure_usage.keys()) - available_annexures)
+                ),
             }
 
         except DatabaseError as e:

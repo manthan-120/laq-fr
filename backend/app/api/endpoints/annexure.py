@@ -41,7 +41,9 @@ async def upload_annexure(
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save annexure: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to save annexure: {str(e)}"
+        )
 
     try:
         config = Config()

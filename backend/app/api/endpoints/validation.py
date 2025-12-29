@@ -11,8 +11,7 @@ router = APIRouter()
 
 @router.get("/laq/{laq_number}", response_model=ValidationReport)
 async def validate_laq_references(
-    laq_number: str,
-    pdf_name: str = Query(..., description="PDF name to validate")
+    laq_number: str, pdf_name: str = Query(..., description="PDF name to validate")
 ):
     """Validate annexure references for a specific LAQ.
 

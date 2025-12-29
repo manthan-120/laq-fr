@@ -32,26 +32,22 @@ async def search_laqs(query: SearchQuery):
 
         # Perform search
         results = rag_service.search(
-            query=query.query,
-            top_k=query.top_k,
-            apply_threshold=True
+            query=query.query, top_k=query.top_k, apply_threshold=True
         )
 
         # Convert to response model
         search_results = [
             SearchResult(
-                question=result['metadata']['question'],
-                answer=result['metadata']['answer'],
-                metadata=result['metadata'],
-                similarity_score=result['similarity']
+                question=result["metadata"]["question"],
+                answer=result["metadata"]["answer"],
+                metadata=result["metadata"],
+                similarity_score=result["similarity"],
             )
             for result in results
         ]
 
         return SearchResponse(
-            query=query.query,
-            results=search_results,
-            total_results=len(search_results)
+            query=query.query, results=search_results, total_results=len(search_results)
         )
 
     except RAGError as e:
