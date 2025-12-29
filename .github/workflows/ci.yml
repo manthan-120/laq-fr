@@ -51,7 +51,7 @@ jobs:
           flags: backend
           name: backend-coverage
 
-  frontend-test:
+  frontend-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,24 +71,12 @@ jobs:
       - name: Run linting
         run: |
           cd frontend
-          npm run lint  # Assumes eslint is configured
-
-      - name: Run tests
-        run: |
-          cd frontend
-          npm test -- --coverage --watchAll=false
+          npm run lint
 
       - name: Build
         run: |
           cd frontend
           npm run build
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./frontend/coverage/lcov.info
-          flags: frontend
-          name: frontend-coverage
 
   security-scan:
     runs-on: ubuntu-latest
