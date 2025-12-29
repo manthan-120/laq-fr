@@ -49,6 +49,11 @@ async def upload_pdf(file: UploadFile = File(...)):
         embedding_service = EmbeddingService(config)
         db = LAQDatabase(config)
 
+        # Extract LAQ number from filename for validation
+        filename_laq_number = pdf_processor.extract_laq_number_from_filename(file.filename)
+        if filename_laq_number:
+            print(f"📋 Filename indicates LAQ number: {filename_laq_number}")
+
         # Check if PDF already processed (if enabled)
         if config.skip_duplicate_pdfs:
             if db.pdf_already_processed(file.filename):

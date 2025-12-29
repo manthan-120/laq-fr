@@ -93,3 +93,36 @@ class HealthCheck(BaseModel):
     status: str
     ollama_running: bool
     database: str
+
+
+class ValidationReport(BaseModel):
+    """Validation report for a single LAQ."""
+    laq_number: str
+    pdf_name: str
+    total_laq_documents: int
+    total_annexures: int
+    referenced_annexures: List[str]
+    available_annexures: List[str]
+    missing_annexures: List[str]
+    unreferenced_annexures: List[str]
+    validation_status: str
+    issues: List[str]
+
+
+class ValidationSummary(BaseModel):
+    """Summary validation report for all LAQs."""
+    total_laqs_validated: int
+    total_with_issues: int
+    validation_reports: List[ValidationReport]
+    summary: Dict
+
+
+class AnnexureUsageStats(BaseModel):
+    """Annexure usage statistics."""
+    total_annexure_documents: int
+    unique_annexure_labels: int
+    total_references_in_laqs: int
+    unique_referenced_annexures: int
+    annexure_usage_breakdown: Dict
+    unreferenced_annexures: List[str]
+    referenced_but_missing: List[str]

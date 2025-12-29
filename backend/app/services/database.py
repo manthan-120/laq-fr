@@ -184,7 +184,9 @@ class LAQDatabase:
         import re
         if not text:
             return []
-        pattern = re.compile(r"Annexure\s*[-–]?\s*([A-Za-z0-9]+)", re.IGNORECASE)
+        # More specific pattern: "Annexure" (exactly, not "annexures") followed by optional separator and label
+        # Use word boundaries to avoid matching plurals
+        pattern = re.compile(r"\bAnnexure\b\s*[-–]?\s*([A-Za-z0-9]+)", re.IGNORECASE)
         labels = pattern.findall(text)
         # Normalize: strip spaces
         return [lbl.strip() for lbl in labels]

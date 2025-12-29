@@ -5,6 +5,7 @@ import Search from './pages/Search'
 import Chat from './pages/Chat'
 import Upload from './pages/Upload'
 import Database from './pages/Database'
+import Validation from './pages/Validation'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/database" element={<Database />} />
+          <Route path="/validation" element={<Validation />} />
         </Routes>
       </Layout>
     </Router>
