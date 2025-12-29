@@ -38,7 +38,7 @@ class AnnexureData:
 class ExcelProcessor:
     """Parses .xls/.xlsx annexure files into structured text."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def validate_excel_file(self, file_path: str) -> Path:

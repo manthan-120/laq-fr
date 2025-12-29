@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/", summary="List annexures for a LAQ")
-async def list_annexures(laq_number: str = Query(..., alias="laq_number")):
+async def list_annexures(laq_number: str = Query(..., alias="laq_number")) -> dict:
     """List stored annexures for a given LAQ number.
 
     Returns metadata and full text so clients can verify availability.

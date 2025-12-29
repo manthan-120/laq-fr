@@ -59,7 +59,7 @@ class Config:
     llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
     llm_top_p: float = float(os.getenv("LLM_TOP_P", "0.9"))
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         # Create database directory if it doesn't exist
         self.db_path.mkdir(parents=True, exist_ok=True)
