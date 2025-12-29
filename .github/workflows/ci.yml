@@ -76,7 +76,7 @@ jobs:
       - name: Build
         run: |
           cd frontend
-          npm run build
+          npx vite build
 
   security-scan:
     runs-on: ubuntu-latest
