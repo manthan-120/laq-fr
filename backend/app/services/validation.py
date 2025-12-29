@@ -71,7 +71,6 @@ class ValidationService:
                 if label:
                     available_annexures.add(self._normalize_annexure_label(label))
 
-
             # Check for missing annexures
             missing_annexures = referenced_annexures - available_annexures
 
@@ -126,6 +125,7 @@ class ValidationService:
             raise ValidationError(f"Database error during validation: {e}")
         except Exception as e:
             raise ValidationError(f"Unexpected error during validation: {e}")
+
     def _normalize_annexure_label(self, label: str) -> str:
         """
         Normalize annexure labels to Roman numeral only.
@@ -225,7 +225,6 @@ class ValidationService:
                 label = metadata.get("annexure_label", "")
                 if label:
                     available_annexures.add(self._normalize_annexure_label(label))
-
 
             return {
                 "total_annexure_documents": len(annexure_results.get("metadatas", [])),

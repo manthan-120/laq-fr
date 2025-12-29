@@ -5,9 +5,8 @@ Wraps the existing config module and adds API-specific settings.
 
 from functools import lru_cache
 from pathlib import Path
-from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
 
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -46,8 +45,8 @@ class Settings(BaseSettings):
     model_config = ConfigDict(
         env_file=".env",
         case_sensitive=True,
-        extra="allow",              # 🔑 THIS FIXES YOUR ERROR
-        protected_namespaces=(),    # silences model_ warnings (optional)
+        extra="allow",  # 🔑 THIS FIXES YOUR ERROR
+        protected_namespaces=(),  # silences model_ warnings (optional)
     )
 
 
