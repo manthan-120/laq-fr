@@ -1,11 +1,11 @@
 """Validation service for checking annexure and LAQ references."""
 
 import json
-from typing import Dict, List, Optional, Tuple
 import re
+from typing import Dict, List, Optional, Tuple
 
 from app.services.config import Config
-from app.services.database import LAQDatabase, DatabaseError
+from app.services.database import DatabaseError, LAQDatabase
 
 
 class ValidationError(Exception):

@@ -6,8 +6,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.models.schemas import DatabaseInfo
-from app.services.database import LAQDatabase, DatabaseError
 from app.services.config import Config
+from app.services.database import DatabaseError, LAQDatabase
 
 router = APIRouter()
 

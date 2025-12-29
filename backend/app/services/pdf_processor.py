@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 from typing import Dict, List, Optional
+
 import ollama
 from docling.document_converter import DocumentConverter
 from pydantic import BaseModel, Field, ValidationError

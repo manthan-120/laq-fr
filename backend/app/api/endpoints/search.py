@@ -5,10 +5,10 @@ Search API endpoint for semantic LAQ search.
 from fastapi import APIRouter, HTTPException
 
 from app.models.schemas import SearchQuery, SearchResponse, SearchResult
-from app.services.rag import RAGService, RAGError
 from app.services.config import Config
 from app.services.database import LAQDatabase
 from app.services.embeddings import EmbeddingService
+from app.services.rag import RAGError, RAGService
 
 router = APIRouter()
 

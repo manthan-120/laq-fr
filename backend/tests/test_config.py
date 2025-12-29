@@ -1,9 +1,9 @@
 """Unit tests for the configuration module."""
 
 import os
-import pytest
 from pathlib import Path
 
+import pytest
 from config import Config
 
 

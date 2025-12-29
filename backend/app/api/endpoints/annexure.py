@@ -1,14 +1,15 @@
 """Annexure upload API endpoint for Excel files."""
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from pathlib import Path
 import shutil
+from pathlib import Path
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.models.schemas import AnnexureUploadResponse
-from app.services.excel_processor import ExcelProcessor, ExcelProcessingError
-from app.services.embeddings import EmbeddingService, EmbeddingError
-from app.services.database import LAQDatabase, DatabaseError
 from app.services.config import Config
+from app.services.database import DatabaseError, LAQDatabase
+from app.services.embeddings import EmbeddingError, EmbeddingService
+from app.services.excel_processor import ExcelProcessingError, ExcelProcessor
 
 router = APIRouter()
 

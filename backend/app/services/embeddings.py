@@ -1,6 +1,7 @@
 """Embedding generation using Ollama for the LAQ RAG system."""
 
 from typing import List
+
 import ollama
 
 from app.services.config import Config

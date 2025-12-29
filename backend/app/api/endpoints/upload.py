@@ -2,15 +2,16 @@
 Upload API endpoint for PDF processing.
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from pathlib import Path
 import shutil
+from pathlib import Path
 
-from app.models.schemas import UploadResponse, LAQDataResponse, QAPairResponse
-from app.services.pdf_processor import PDFProcessor, PDFProcessingError
-from app.services.embeddings import EmbeddingService, EmbeddingError
-from app.services.database import LAQDatabase, DatabaseError
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
+from app.models.schemas import LAQDataResponse, QAPairResponse, UploadResponse
 from app.services.config import Config
+from app.services.database import DatabaseError, LAQDatabase
+from app.services.embeddings import EmbeddingError, EmbeddingService
+from app.services.pdf_processor import PDFProcessingError, PDFProcessor
 
 router = APIRouter()
 

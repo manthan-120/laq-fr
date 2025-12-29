@@ -2,7 +2,8 @@
 
 import json
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
+
 import chromadb
 from chromadb.api.models.Collection import Collection
 

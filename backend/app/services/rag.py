@@ -2,7 +2,8 @@
 
 import json
 import math
-from typing import List, Dict, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
+
 import ollama
 
 from app.services.config import Config

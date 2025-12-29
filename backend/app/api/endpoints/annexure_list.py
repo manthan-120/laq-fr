@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from app.services.config import Config
-from app.services.database import LAQDatabase, DatabaseError
+from app.services.database import DatabaseError, LAQDatabase
 
 router = APIRouter()
 

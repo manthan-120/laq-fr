@@ -4,8 +4,9 @@ Wraps the existing config module and adds API-specific settings.
 """
 
 from functools import lru_cache
-from pydantic_settings import BaseSettings
 from pathlib import Path
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
