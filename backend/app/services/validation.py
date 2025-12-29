@@ -58,7 +58,9 @@ class ValidationService:
                 refs = metadata.get("referenced_annexures", "[]")
                 try:
                     refs_list = json.loads(refs)
-                    referenced_annexures.update(refs_list)
+                    for ref in refs_list:
+                        referenced_annexures.add(self._normalize_annexure_label(ref))
+
                 except (json.JSONDecodeError, TypeError):
                     pass
 
@@ -67,7 +69,8 @@ class ValidationService:
             for metadata in annexure_results.get("metadatas", []):
                 label = metadata.get("annexure_label", "")
                 if label:
-                    available_annexures.add(label)
+                    available_annexures.add(self._normalize_annexure_label(label))
+
 
             # Check for missing annexures
             missing_annexures = referenced_annexures - available_annexures
@@ -123,6 +126,20 @@ class ValidationService:
             raise ValidationError(f"Database error during validation: {e}")
         except Exception as e:
             raise ValidationError(f"Unexpected error during validation: {e}")
+    def _normalize_annexure_label(self, label: str) -> str:
+        """
+        Normalize annexure labels to Roman numeral only.
+        Examples:
+        - "Annexure-I" → "I"
+        - "annexure ii" → "II"
+        - "III" → "III"
+        """
+        if not label:
+            return ""
+
+        label = label.upper().strip()
+        label = re.sub(r"ANNEXURE[-\s]*", "", label)
+        return label
 
     def validate_all_laqs(self) -> Dict:
         """Validate annexure references for all LAQs in the database.
@@ -207,7 +224,8 @@ class ValidationService:
             for metadata in annexure_results.get("metadatas", []):
                 label = metadata.get("annexure_label", "")
                 if label:
-                    available_annexures.add(label)
+                    available_annexures.add(self._normalize_annexure_label(label))
+
 
             return {
                 "total_annexure_documents": len(annexure_results.get("metadatas", [])),

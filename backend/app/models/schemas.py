@@ -21,7 +21,7 @@ class LAQDataResponse(BaseModel):
     pdf_title: str
     laq_type: str
     laq_number: str
-    minister: str
+    minister: Optional[str] = None
     date: str
     qa_pairs: List[QAPairResponse]
     tabled_by: Optional[str] = None

@@ -11,6 +11,7 @@ from app.api.endpoints import (
     annexure_list,
     chat,
     database,
+    laqs,
     search,
     upload,
     validation,
@@ -46,6 +47,7 @@ app.include_router(annexure_list.router, prefix="/api/annexure", tags=["annexure
 app.include_router(search.router, prefix="/api/search", tags=["search"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(database.router, prefix="/api/database", tags=["database"])
+app.include_router(laqs.router, prefix="/api/laqs", tags=["laqs"])
 app.include_router(validation.router, prefix="/api/validation", tags=["validation"])
 
 
