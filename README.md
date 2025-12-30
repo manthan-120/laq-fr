@@ -60,7 +60,7 @@ minimal-local-RAG/
    ```
 
 ### Verify Installation
-```bash
+```bash  
 # Check Python
 python --version
 

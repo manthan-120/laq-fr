@@ -50,11 +50,11 @@ function Dashboard() {
     setFilteredLaqs(temp)
   }, [filters, laqs])
 
-  // ✅ Stats
-  const totalDocuments = laqs.length
-  const starred = laqs.filter(l => l.type === 'Starred').length
-  const unstarred = laqs.filter(l => l.type === 'Unstarred').length
-  const departments = [...new Set(laqs.map(l => l.department))].length
+  // // ✅ Stats
+  // const totalDocuments = laqs.length
+  // const starred = laqs.filter(l => l.type === 'Starred').length
+  // const unstarred = laqs.filter(l => l.type === 'Unstarred').length
+  // const departments = [...new Set(laqs.map(l => l.department))].length
 
   // ✅ Filter options
   const years = [...new Set(laqs.map(l => l.year))]
@@ -64,7 +64,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* Top Stats */}
+      {/* Top Stats
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-label">Total LAQs</div>
@@ -85,7 +85,7 @@ function Dashboard() {
           <div className="stat-label">Departments Covered</div>
           <div className="stat-value">{departments}</div>
         </div>
-      </div>
+      </div> */}
 
       {/* Filters */}
       <h2 className="section-title">LAQ Questions Intake</h2>
