@@ -37,7 +37,7 @@ async def get_all_laqs():
                 # Try to extract year from date string (e.g., "2024-03-15" -> "2024")
                 try:
                     if "-" in date_str:
-                        year = date_str.split("-")[0]
+                        year = date_str.split("-")[-1]
                     elif "/" in date_str:
                         parts = date_str.split("/")
                         year = parts[2] if len(parts) == 3 else ""
