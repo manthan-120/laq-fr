@@ -1,14 +1,15 @@
 """Annexure upload API endpoint for Excel files."""
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from pathlib import Path
 import shutil
+from pathlib import Path
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.models.schemas import AnnexureUploadResponse
-from app.services.excel_processor import ExcelProcessor, ExcelProcessingError
-from app.services.embeddings import EmbeddingService, EmbeddingError
-from app.services.database import LAQDatabase, DatabaseError
 from app.services.config import Config
+from app.services.database import DatabaseError, LAQDatabase
+from app.services.embeddings import EmbeddingError, EmbeddingService
+from app.services.excel_processor import ExcelProcessingError, ExcelProcessor
 
 router = APIRouter()
 
@@ -19,7 +20,7 @@ async def upload_annexure(
     laq_number: str = Form(...),
     pdf_name: str = Form(...),
     annexure_label: str = Form(None),
-):
+) -> AnnexureUploadResponse:
     """
     Upload and process an annexure Excel file (.xls/.xlsx) for a specific LAQ.
 
@@ -41,7 +42,9 @@ async def upload_annexure(
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save annexure: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to save annexure: {str(e)}"
+        )
 
     try:
         config = Config()

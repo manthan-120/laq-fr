@@ -1,12 +1,14 @@
 """Excel annexure processing for LAQ RAG system."""
 
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import pandas as pd
 
 
 class ExcelProcessingError(Exception):
     """Raised when Excel processing fails."""
+
     pass
 
 
@@ -36,7 +38,7 @@ class AnnexureData:
 class ExcelProcessor:
     """Parses .xls/.xlsx annexure files into structured text."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def validate_excel_file(self, file_path: str) -> Path:
@@ -49,7 +51,9 @@ class ExcelProcessor:
             )
         return path
 
-    def _sheet_to_markdown(self, df: pd.DataFrame, max_rows: int = 50, max_cols: int = 50) -> str:
+    def _sheet_to_markdown(
+        self, df: pd.DataFrame, max_rows: int = 50, max_cols: int = 50
+    ) -> str:
         # Trim oversized sheets
         df = df.iloc[:max_rows, :max_cols]
         # Replace NaNs for readability
@@ -60,8 +64,6 @@ class ExcelProcessor:
         rows = [" | ".join(map(lambda x: str(x), row)) for row in df.values.tolist()]
         md = [headers, separator, *rows]
         return "\n".join(md)
-
-
 
     def process_excel(self, file_path: str) -> AnnexureData:
         """Read Excel and convert sheets to markdown-like tables."""

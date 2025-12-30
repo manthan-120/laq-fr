@@ -1,11 +1,11 @@
 """Unit tests for the PDF processor module."""
 
-import pytest
 from pathlib import Path
-from pydantic import ValidationError
 
-from pdf_processor import QAPair, LAQData, PDFProcessingError, PDFProcessor
+import pytest
 from config import Config
+from pdf_processor import LAQData, PDFProcessingError, PDFProcessor, QAPair
+from pydantic import ValidationError
 
 
 class TestQAPair:

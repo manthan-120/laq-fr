@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 from typing import Dict, List, Optional
+
 import ollama
 from docling.document_converter import DocumentConverter
 from pydantic import BaseModel, Field, ValidationError
@@ -35,6 +36,7 @@ class LAQData(BaseModel):
 
 class PDFProcessingError(Exception):
     """Raised when PDF processing fails."""
+
     pass
 
 
@@ -49,6 +51,50 @@ class PDFProcessor:
         """
         self.config = config
         self.converter = DocumentConverter()
+
+    def extract_laq_number_from_filename(self, filename: str) -> Optional[str]:
+        """Extract LAQ number from PDF filename.
+
+        Handles various formats:
+        - replylaqno.pdf -> extract the laq number after 'reply'
+        - 123.pdf -> use the filename stem as LAQ number
+        - laq_123.pdf -> extract number after common prefixes
+
+        Args:
+            filename: PDF filename
+
+        Returns:
+            Extracted LAQ number or None if not found
+        """
+        import re
+        from pathlib import Path
+
+        # Get filename without extension
+        stem = Path(filename).stem.lower()
+
+        # Pattern 1: replylaqno format (e.g., "reply123" -> "123")
+        reply_match = re.search(r"reply(\d+[a-z]?)", stem, re.IGNORECASE)
+        if reply_match:
+            return reply_match.group(1).upper()
+
+        # Pattern 2: Direct number at start (e.g., "123abc" -> "123ABC")
+        number_match = re.match(r"^(\d+[a-z]?)", stem)
+        if number_match:
+            return number_match.group(1).upper()
+
+        # Pattern 3: Common prefixes like laq_, laqno_, etc.
+        prefix_match = re.search(
+            r"(?:laq|laqno|question)[_-]?(\d+[a-z]?)", stem, re.IGNORECASE
+        )
+        if prefix_match:
+            return prefix_match.group(1).upper()
+
+        # Pattern 4: Any number in filename
+        any_number = re.search(r"(\d+[a-z]?)", stem)
+        if any_number:
+            return any_number.group(1).upper()
+
+        return None
 
     def validate_pdf_file(self, pdf_path: str) -> Path:
         """Validate that the file exists and is a PDF or Word document.
@@ -81,11 +127,15 @@ class PDFProcessor:
         # Check file size (warn if > 10MB)
         size_mb = path.stat().st_size / (1024 * 1024)
         if size_mb > 10:
-            print(f"⚠️ Large file detected ({size_mb:.1f} MB). Processing may take time.")
+            print(
+                f"⚠️ Large file detected ({size_mb:.1f} MB). Processing may take time."
+            )
 
         return path
 
-    def extract_markdown_from_pdf(self, pdf_path: Path, cache_result: bool = True) -> str:
+    def extract_markdown_from_pdf(
+        self, pdf_path: Path, cache_result: bool = True
+    ) -> str:
         """Convert PDF to markdown using Docling with optional caching.
 
         Args:
@@ -107,13 +157,13 @@ class PDFProcessor:
             cache_dir.mkdir(parents=True, exist_ok=True)
 
             # Generate cache key from file hash
-            with open(pdf_path, 'rb') as f:
+            with open(pdf_path, "rb") as f:
                 file_hash = hashlib.md5(f.read()).hexdigest()
             cache_file = cache_dir / f"{pdf_path.stem}_{file_hash}.md"
 
             if cache_file.exists():
                 print(f"✅ Using cached markdown conversion")
-                return cache_file.read_text(encoding='utf-8')
+                return cache_file.read_text(encoding="utf-8")
 
         try:
             print(f"🔄 Converting PDF to markdown...")
@@ -123,16 +173,16 @@ class PDFProcessor:
 
             # Cache the result
             if cache_result:
-                cache_file.write_text(markdown_data, encoding='utf-8')
+                cache_file.write_text(markdown_data, encoding="utf-8")
                 print(f"💾 Cached markdown conversion")
 
             return markdown_data
         except Exception as e:
-            raise PDFProcessingError(
-                f"Failed to convert PDF to markdown: {e}"
-            ) from e
+            raise PDFProcessingError(f"Failed to convert PDF to markdown: {e}") from e
 
-    def structure_laqs_with_mistral(self, markdown_data: str, pdf_path: Path) -> LAQData:
+    def structure_laqs_with_mistral(
+        self, markdown_data: str, pdf_path: Path
+    ) -> LAQData:
         """Use Mistral LLM to extract structured LAQ data from markdown.
 
         Args:
@@ -229,9 +279,7 @@ Now extract the structured data in this format from the following text:
                 print(f"✅ Successfully extracted {len(laq_data.qa_pairs)} Q&A pairs")
                 return laq_data
             except ValidationError as e:
-                raise PDFProcessingError(
-                    f"Invalid LAQ data structure:\n{e}"
-                ) from e
+                raise PDFProcessingError(f"Invalid LAQ data structure:\n{e}") from e
 
         except Exception as e:
             if isinstance(e, PDFProcessingError):
@@ -239,7 +287,7 @@ Now extract the structured data in this format from the following text:
             raise PDFProcessingError(f"Mistral processing error: {e}") from e
 
     def process_pdf(self, pdf_path: str) -> LAQData:
-        """Complete pipeline: validate -> extract markdown -> structure with LLM.
+        """Complete pipeline: validate -> extract LAQ number from filename -> structure with LLM.
 
         Args:
             pdf_path: Path to the PDF file
@@ -253,10 +301,34 @@ Now extract the structured data in this format from the following text:
         # Step 1: Validate
         validated_path = self.validate_pdf_file(pdf_path)
 
-        # Step 2: Extract markdown
+        # Step 2: Try to extract LAQ number from filename first
+        filename_laq_number = self.extract_laq_number_from_filename(validated_path.name)
+        if filename_laq_number:
+            print(f"📄 Extracted LAQ number from filename: {filename_laq_number}")
+        else:
+            print("📄 No LAQ number found in filename, will use LLM extraction")
+
+        # Step 3: Extract markdown
         markdown_data = self.extract_markdown_from_pdf(validated_path)
 
-        # Step 3: Structure with LLM
+        # Step 4: Structure with LLM
         laq_data = self.structure_laqs_with_mistral(markdown_data, validated_path)
+
+        # Step 5: Override LAQ number with filename extraction if available
+        if filename_laq_number:
+            print(
+                f"🔄 Overriding LLM-extracted LAQ number '{laq_data.laq_number}' with filename-based '{filename_laq_number}'"
+            )
+            # Create new LAQData with filename-based LAQ number
+            laq_data = LAQData(
+                pdf_title=laq_data.pdf_title,
+                laq_type=laq_data.laq_type,
+                laq_number=filename_laq_number,  # Use filename-based number
+                minister=laq_data.minister,
+                date=laq_data.date,
+                qa_pairs=laq_data.qa_pairs,
+                tabled_by=laq_data.tabled_by,
+                attachments=laq_data.attachments,
+            )
 
         return laq_data

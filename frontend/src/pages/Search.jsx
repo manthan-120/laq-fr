@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { HiSearch, HiExclamation, HiDocumentText, HiUser, HiCalendar, HiTag } from 'react-icons/hi'
+import { HiSearch, HiExclamation, HiUser, HiCalendar, HiTag } from 'react-icons/hi'
 import { searchLAQs } from '../services/api'
 import './Search.css'
 

@@ -5,16 +5,16 @@ Search API endpoint for semantic LAQ search.
 from fastapi import APIRouter, HTTPException
 
 from app.models.schemas import SearchQuery, SearchResponse, SearchResult
-from app.services.rag import RAGService, RAGError
 from app.services.config import Config
 from app.services.database import LAQDatabase
 from app.services.embeddings import EmbeddingService
+from app.services.rag import RAGError, RAGService
 
 router = APIRouter()
 
 
 @router.post("/", response_model=SearchResponse)
-async def search_laqs(query: SearchQuery):
+async def search_laqs(query: SearchQuery) -> SearchResponse:
     """
     Perform semantic search on LAQ database.
 
@@ -32,26 +32,22 @@ async def search_laqs(query: SearchQuery):
 
         # Perform search
         results = rag_service.search(
-            query=query.query,
-            top_k=query.top_k,
-            apply_threshold=True
+            query=query.query, top_k=query.top_k, apply_threshold=True
         )
 
         # Convert to response model
         search_results = [
             SearchResult(
-                question=result['metadata']['question'],
-                answer=result['metadata']['answer'],
-                metadata=result['metadata'],
-                similarity_score=result['similarity']
+                question=result["metadata"]["question"],
+                answer=result["metadata"]["answer"],
+                metadata=result["metadata"],
+                similarity_score=result["similarity"],
             )
             for result in results
         ]
 
         return SearchResponse(
-            query=query.query,
-            results=search_results,
-            total_results=len(search_results)
+            query=query.query, results=search_results, total_results=len(search_results)
         )
 
     except RAGError as e:

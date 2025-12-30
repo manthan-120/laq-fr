@@ -6,21 +6,22 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.models.schemas import DatabaseInfo
-from app.services.database import LAQDatabase, DatabaseError
 from app.services.config import Config
+from app.services.database import DatabaseError, LAQDatabase
 
 router = APIRouter()
 
 
 class ClearResponse(BaseModel):
     """Response model for clear database operation."""
+
     success: bool
     message: str
     documents_deleted: int
 
 
 @router.get("/info", response_model=DatabaseInfo)
-async def get_database_info():
+async def get_database_info() -> DatabaseInfo:
     """
     Get database information and statistics.
 
@@ -44,7 +45,7 @@ async def get_database_info():
             database_path=str(config.db_path),
             similarity_metric="cosine",
             embedding_model=config.embedding_model,
-            llm_model=config.llm_model
+            llm_model=config.llm_model,
         )
 
     except DatabaseError as e:
@@ -54,7 +55,7 @@ async def get_database_info():
 
 
 @router.delete("/clear", response_model=ClearResponse)
-async def clear_database():
+async def clear_database() -> ClearResponse:
     """
     Clear all data from the database.
 
@@ -77,10 +78,12 @@ async def clear_database():
         return ClearResponse(
             success=True,
             message=f"Successfully cleared database. Deleted {count_before} documents.",
-            documents_deleted=count_before
+            documents_deleted=count_before,
         )
 
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to clear database: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to clear database: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
