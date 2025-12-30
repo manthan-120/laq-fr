@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { HiDatabase, HiChip, HiDocumentText, HiCollection, HiClock, HiCog, HiTrash, HiExclamationCircle } from 'react-icons/hi'
+import { HiDatabase, HiChip, HiDocumentText, HiCollection, HiCog, HiTrash, HiExclamationCircle } from 'react-icons/hi'
 import { HiServerStack } from 'react-icons/hi2'
 import { SiOpenai } from 'react-icons/si'
 import { getDatabaseInfo, clearDatabase } from '../services/api'

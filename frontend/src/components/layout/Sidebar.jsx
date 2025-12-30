@@ -14,6 +14,7 @@ function Sidebar() {
     { path: '/chat', label: 'LAQ Assistant' },
     { path: '/upload', label: 'LAQ Intake' },
     { path: '/database', label: 'LAQ Repository' },
+    { path: '/validation', label: 'Validation' },
   ]
 
   return (

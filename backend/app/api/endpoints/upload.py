@@ -2,15 +2,16 @@
 Upload API endpoint for PDF processing.
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from pathlib import Path
 import shutil
+from pathlib import Path
 
-from app.models.schemas import UploadResponse, LAQDataResponse, QAPairResponse
-from app.services.pdf_processor import PDFProcessor, PDFProcessingError
-from app.services.embeddings import EmbeddingService, EmbeddingError
-from app.services.database import LAQDatabase, DatabaseError
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
+from app.models.schemas import LAQDataResponse, QAPairResponse, UploadResponse
 from app.services.config import Config
+from app.services.database import DatabaseError, LAQDatabase
+from app.services.embeddings import EmbeddingError, EmbeddingService
+from app.services.pdf_processor import PDFProcessingError, PDFProcessor
 
 router = APIRouter()
 
@@ -27,7 +28,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     """
 
     # Validate file type
-    if not file.filename.endswith('.pdf'):
+    if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
     # Create upload directory if not exists
@@ -49,6 +50,13 @@ async def upload_pdf(file: UploadFile = File(...)):
         embedding_service = EmbeddingService(config)
         db = LAQDatabase(config)
 
+        # Extract LAQ number from filename for validation
+        filename_laq_number = pdf_processor.extract_laq_number_from_filename(
+            file.filename
+        )
+        if filename_laq_number:
+            print(f"📋 Filename indicates LAQ number: {filename_laq_number}")
+
         # Check if PDF already processed (if enabled)
         if config.skip_duplicate_pdfs:
             if db.pdf_already_processed(file.filename):
@@ -56,7 +64,7 @@ async def upload_pdf(file: UploadFile = File(...)):
                 raise HTTPException(
                     status_code=409,
                     detail=f"PDF '{file.filename}' already processed with {existing_count} Q&A pairs. "
-                           f"Delete existing entries first or disable SKIP_DUPLICATE_PDFS."
+                    f"Delete existing entries first or disable SKIP_DUPLICATE_PDFS.",
                 )
 
         # Process PDF (with caching if enabled)
@@ -64,41 +72,40 @@ async def upload_pdf(file: UploadFile = File(...)):
 
         # Prepare metadata for enhanced embeddings
         laq_metadata = {
-            'laq_type': laq_data.laq_type,
-            'minister': laq_data.minister,
-            'date': laq_data.date,
-            'pdf_title': laq_data.pdf_title
+            "laq_type": laq_data.laq_type,
+            "minister": laq_data.minister,
+            "date": laq_data.date,
+            "pdf_title": laq_data.pdf_title,
         }
 
         # Convert Q&A pairs to dict format
         qa_pairs_dict = [
-            {'question': qa.question, 'answer': qa.answer}
-            for qa in laq_data.qa_pairs
+            {"question": qa.question, "answer": qa.answer} for qa in laq_data.qa_pairs
         ]
 
         # Generate embeddings with optimizations
         embeddings_list = embedding_service.embed_qa_pairs(
             qa_pairs=qa_pairs_dict,
             laq_metadata=laq_metadata if config.use_enhanced_context else None,
-            use_enhanced_context=config.use_enhanced_context
+            use_enhanced_context=config.use_enhanced_context,
         )
 
         # Store in database
         laq_data_dict = {
-            'pdf_title': laq_data.pdf_title,
-            'laq_type': laq_data.laq_type,
-            'laq_number': laq_data.laq_number,
-            'minister': laq_data.minister,
-            'date': laq_data.date,
-            'tabled_by': laq_data.tabled_by,
-            'attachments': laq_data.attachments,
-            'qa_pairs': qa_pairs_dict
+            "pdf_title": laq_data.pdf_title,
+            "laq_type": laq_data.laq_type,
+            "laq_number": laq_data.laq_number,
+            "minister": laq_data.minister,
+            "date": laq_data.date,
+            "tabled_by": laq_data.tabled_by,
+            "attachments": laq_data.attachments,
+            "qa_pairs": qa_pairs_dict,
         }
 
         stored_count = db.store_qa_pairs(
             laq_data=laq_data_dict,
             pdf_name=file.filename,
-            embeddings_list=embeddings_list
+            embeddings_list=embeddings_list,
         )
 
         # Convert to response model
@@ -115,7 +122,7 @@ async def upload_pdf(file: UploadFile = File(...)):
             date=laq_data.date,
             qa_pairs=qa_pairs_response,
             tabled_by=laq_data.tabled_by,
-            attachments=laq_data.attachments
+            attachments=laq_data.attachments,
         )
 
         return UploadResponse(
@@ -123,15 +130,19 @@ async def upload_pdf(file: UploadFile = File(...)):
             message=f"Successfully processed {file.filename} - Stored {stored_count} Q&A pairs",
             pdf_name=file.filename,
             qa_pairs_extracted=len(laq_data.qa_pairs),
-            laq_data=laq_response
+            laq_data=laq_response,
         )
 
     except PDFProcessingError as e:
         raise HTTPException(status_code=400, detail=f"PDF processing failed: {str(e)}")
     except EmbeddingError as e:
-        raise HTTPException(status_code=500, detail=f"Embedding generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Embedding generation failed: {str(e)}"
+        )
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail=f"Database operation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database operation failed: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
     finally:

@@ -2,7 +2,8 @@
 
 import json
 import math
-from typing import List, Dict, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
+
 import ollama
 
 from app.services.config import Config
@@ -12,13 +13,16 @@ from app.services.embeddings import EmbeddingService
 
 class RAGError(Exception):
     """Raised when RAG operations fail."""
+
     pass
 
 
 class RAGService:
     """Handles search and chat operations for the LAQ RAG system."""
 
-    def __init__(self, config: Config, database: LAQDatabase, embedding_service: EmbeddingService):
+    def __init__(
+        self, config: Config, database: LAQDatabase, embedding_service: EmbeddingService
+    ):
         """Initialize the RAG service.
 
         Args:

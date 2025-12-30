@@ -4,8 +4,10 @@ Wraps the existing config module and adds API-specific settings.
 """
 
 from functools import lru_cache
-from pydantic_settings import BaseSettings
 from pathlib import Path
+
+from pydantic import ConfigDict
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -16,7 +18,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "LAQ RAG API"
 
     # CORS
-    BACKEND_CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:5173"]
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ]
 
     # File Upload
     MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
@@ -36,9 +41,13 @@ class Settings(BaseSettings):
     SIMILARITY_THRESHOLD: float = 0.6
     TEMPERATURE: float = 0.1
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # ✅ Pydantic v2 config
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="allow",  # 🔑 THIS FIXES YOUR ERROR
+        protected_namespaces=(),  # silences model_ warnings (optional)
+    )
 
 
 @lru_cache()

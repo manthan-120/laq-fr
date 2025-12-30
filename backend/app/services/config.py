@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -34,21 +35,31 @@ class Config:
     similarity_threshold: float = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
 
     # Processing settings
-    markdown_chunk_size: int = int(os.getenv("MARKDOWN_CHUNK_SIZE", "20000"))  # Increased for better extraction
+    markdown_chunk_size: int = int(
+        os.getenv("MARKDOWN_CHUNK_SIZE", "20000")
+    )  # Increased for better extraction
     metadata_max_length: int = int(os.getenv("METADATA_MAX_LENGTH", "500"))
     max_context_tokens: int = int(os.getenv("MAX_CONTEXT_TOKENS", "2000"))
 
     # Performance optimizations
-    use_batch_embeddings: bool = os.getenv("USE_BATCH_EMBEDDINGS", "true").lower() == "true"
-    use_enhanced_context: bool = os.getenv("USE_ENHANCED_CONTEXT", "true").lower() == "true"
-    cache_markdown_conversions: bool = os.getenv("CACHE_MARKDOWN", "true").lower() == "true"
-    skip_duplicate_pdfs: bool = os.getenv("SKIP_DUPLICATE_PDFS", "true").lower() == "true"
+    use_batch_embeddings: bool = (
+        os.getenv("USE_BATCH_EMBEDDINGS", "true").lower() == "true"
+    )
+    use_enhanced_context: bool = (
+        os.getenv("USE_ENHANCED_CONTEXT", "true").lower() == "true"
+    )
+    cache_markdown_conversions: bool = (
+        os.getenv("CACHE_MARKDOWN", "true").lower() == "true"
+    )
+    skip_duplicate_pdfs: bool = (
+        os.getenv("SKIP_DUPLICATE_PDFS", "true").lower() == "true"
+    )
 
     # LLM generation settings
     llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
     llm_top_p: float = float(os.getenv("LLM_TOP_P", "0.9"))
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         # Create database directory if it doesn't exist
         self.db_path.mkdir(parents=True, exist_ok=True)
