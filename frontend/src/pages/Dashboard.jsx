@@ -12,6 +12,7 @@ function Dashboard() {
     department: '',
     type: '',
     cutmotion: '',
+    minister: '',
   })
 
   // ✅ Load LAQs from backend
@@ -50,11 +51,11 @@ function Dashboard() {
     setFilteredLaqs(temp)
   }, [filters, laqs])
 
-  // ✅ Stats
-  const totalDocuments = laqs.length
-  const starred = laqs.filter(l => l.type === 'Starred').length
-  const unstarred = laqs.filter(l => l.type === 'Unstarred').length
-  const departments = [...new Set(laqs.map(l => l.department))].length
+  // // ✅ Stats
+  // const totalDocuments = laqs.length
+  // const starred = laqs.filter(l => l.type === 'Starred').length
+  // const unstarred = laqs.filter(l => l.type === 'Unstarred').length
+  // const departments = [...new Set(laqs.map(l => l.department))].length
 
   // ✅ Filter options
   const years = [...new Set(laqs.map(l => l.year))]
@@ -64,7 +65,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* Top Stats */}
+      {/* Top Stats
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-label">Total LAQs</div>
@@ -85,7 +86,7 @@ function Dashboard() {
           <div className="stat-label">Departments Covered</div>
           <div className="stat-value">{departments}</div>
         </div>
-      </div>
+      </div> */}
 
       {/* Filters */}
       <h2 className="section-title">LAQ Questions Intake</h2>
@@ -132,7 +133,8 @@ function Dashboard() {
             <tr>
               <th>LAQ No</th>
               <th>Year</th>
-              <th>MLA Name</th>
+              <th>MLA Name<tr>
+                (tabled by)</tr></th>
               <th>Department</th>
               <th>Demand No</th>
               <th>Type</th>
@@ -140,6 +142,8 @@ function Dashboard() {
               <th>Duplicate</th>
               <th>Date</th>
               <th>Question</th>
+              <th>Minister<tr>
+                (Answered by)</tr></th>
             </tr>
           </thead>
           <tbody>
@@ -155,6 +159,7 @@ function Dashboard() {
                 <td>{l.duplicate ? 'Yes' : 'No'}</td>
                 <td>{l.date}</td>
                 <td>{l.question}</td>
+                <td>{l.minister}</td>
               </tr>
             ))}
 

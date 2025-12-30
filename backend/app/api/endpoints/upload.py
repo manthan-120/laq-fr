@@ -27,8 +27,10 @@ async def upload_pdf(file: UploadFile = File(...)):
     """
 
     # Validate file type
-    if not file.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    # Allow PDF and Word documents
+    allowed_exts = ('.pdf', '.doc', '.docx')
+    if not file.filename.lower().endswith(allowed_exts):
+        raise HTTPException(status_code=400, detail="Only PDF or Word files are allowed (.pdf, .doc, .docx)")
 
     # Create upload directory if not exists
     upload_dir = Path("./uploads")

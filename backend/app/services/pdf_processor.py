@@ -51,10 +51,10 @@ class PDFProcessor:
         self.converter = DocumentConverter()
 
     def validate_pdf_file(self, pdf_path: str) -> Path:
-        """Validate that the file exists and is a PDF.
+        """Validate that the file exists and is a PDF or Word document.
 
         Args:
-            pdf_path: Path to the PDF file
+            pdf_path: Path to the file
 
         Returns:
             Validated Path object
@@ -70,10 +70,12 @@ class PDFProcessor:
         if not path.is_file():
             raise PDFProcessingError(f"Not a file: {pdf_path}")
 
-        if path.suffix.lower() != ".pdf":
+        # Accept PDF and Word documents
+        allowed_exts = {'.pdf', '.doc', '.docx'}
+        if path.suffix.lower() not in allowed_exts:
             raise PDFProcessingError(
-                f"Not a PDF file: {pdf_path}\n"
-                f"Expected .pdf extension, got {path.suffix}"
+                f"Unsupported file type: {pdf_path}\n"
+                f"Expected one of: {', '.join(sorted(allowed_exts))}, got {path.suffix}"
             )
 
         # Check file size (warn if > 10MB)
