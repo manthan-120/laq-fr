@@ -178,6 +178,87 @@ class LAQDatabase:
         except Exception as e:
             raise DatabaseError(f"Failed to fetch annexures: {e}") from e
 
+    def annexure_already_uploaded(self, laq_num: str, annexure_label: str) -> bool:
+        """Check if an annexure with the given LAQ number and label already exists.
+        
+        Args:
+            laq_num: LAQ number
+            annexure_label: Annexure label to check
+            
+        Returns:
+            True if annexure already exists, False otherwise
+        """
+        try:
+            where_clause = {
+                "$and": [
+                    {"laq_num": str(laq_num)},
+                    {"type": "annexure"},
+                    {"annexure_label": annexure_label}
+                ]
+            }
+            results = self.collection.get(where=where_clause, include=[])
+            return len(results.get("ids", [])) > 0
+        except Exception as e:
+            raise DatabaseError(f"Failed to check annexure existence: {e}") from e
+
+    def remove_duplicate_annexures(self) -> Dict:
+        """Remove duplicate annexures, keeping only one copy of each LAQ + label combination.
+        
+        Returns:
+            Summary of removed duplicates
+        """
+        try:
+            # Get all annexures
+            all_annexures = self.collection.get(
+                where={"type": "annexure"},
+                include=["metadatas"]
+            )
+            
+            # Group by LAQ number and normalized label
+            import re
+            seen = {}  # key: (laq_num, normalized_label), value: first_id
+            to_delete = []
+            
+            for idx, metadata in enumerate(all_annexures.get("metadatas", [])):
+                laq_num = metadata.get("laq_num")
+                label = metadata.get("annexure_label", "")
+                doc_id = all_annexures.get("ids", [])[idx]
+                
+                # Normalize the label
+                normalized = label.upper().strip()
+                normalized = re.sub(r"^ANNEX(?:URE)?S?[-\s]*", "", normalized)
+                normalized = re.sub(r"^ANEXURES?[-\s]*", "", normalized)
+                match = re.search(r"([IVivXLCDM]+)", normalized)
+                if match:
+                    normalized = match.group(1).upper()
+                
+                key = (str(laq_num), normalized)
+                
+                if key in seen:
+                    # This is a duplicate - mark for deletion
+                    to_delete.append(doc_id)
+                    print(f"  Found duplicate: LAQ {laq_num}, Annexure {label} (id: {doc_id})")
+                else:
+                    # First occurrence - keep it
+                    seen[key] = doc_id
+            
+            # Delete duplicates
+            deleted_count = 0
+            if to_delete:
+                self.collection.delete(ids=to_delete)
+                deleted_count = len(to_delete)
+                print(f"✓ Deleted {deleted_count} duplicate annexure(s)")
+            
+            return {
+                "total_annexures": len(all_annexures.get("metadatas", [])),
+                "duplicates_found": deleted_count,
+                "deleted_ids": to_delete,
+                "status": "completed"
+            }
+            
+        except Exception as e:
+            raise DatabaseError(f"Failed to remove duplicate annexures: {e}") from e
+    
     def _extract_annexure_labels(self, text: str) -> List[str]:
         """Heuristically extract annexure labels from text.
 

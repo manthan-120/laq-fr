@@ -43,10 +43,11 @@ class SearchQuery(BaseModel):
 class SearchResult(BaseModel):
     """Single search result."""
 
-    question: str
-    answer: str
-    metadata: dict
+    question: Optional[str] = None
+    answer: Optional[str] = None
+    metadata: dict = {}
     similarity_score: float
+    annexures: List[dict] = Field(default_factory=list, description="Associated annexures if referenced in the answer")
 
 
 class SearchResponse(BaseModel):

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { HiSearch, HiExclamation, HiUser, HiCalendar, HiTag } from 'react-icons/hi'
+import { HiSearch, HiExclamation, HiUser, HiCalendar, HiTag, HiDocumentText } from 'react-icons/hi'
 import { searchLAQs } from '../services/api'
 import './Search.css'
 
@@ -83,6 +83,32 @@ function Search() {
                       Date: {result.metadata.date}
                     </span>
                   </div>
+
+                  {/* Display annexure content if present */}
+                  {result.annexures && result.annexures.length > 0 && (
+                    <div className="result-annexures">
+                      <div className="annexure-header">
+                        <HiDocumentText />
+                        <span>Attached Annexures</span>
+                      </div>
+                      {result.annexures.map((annexure, annexIdx) => (
+                        <div key={annexIdx} className="annexure-item">
+                          <div className="annexure-label">
+                            <strong>Annexure {annexure.label}:</strong>
+                          </div>
+                          {annexure.metadata && (
+                            <div className="annexure-meta">
+                              Annexure File: {annexure.metadata.annexure_file || 'N/A'}
+                            </div>
+                          )}
+                          <div className="annexure-content">
+                            {/* Display as formatted table/text */}
+                            <pre>{annexure.content}</pre>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

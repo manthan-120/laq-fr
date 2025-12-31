@@ -223,6 +223,29 @@
   color: #666;
 }
 
+.uploaded-count {
+  background: #d1ecf1;
+  color: #0c5460;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.annexure-info {
+  background: #e7f3ff;
+  border-left: 4px solid #2196F3;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border-radius: 3px;
+}
+
+.info-text {
+  margin: 0;
+  color: #1565c0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 .annexure-list {
   margin-bottom: 10px;
   font-size: 0.9rem;

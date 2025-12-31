@@ -162,17 +162,22 @@ const Validation = () => {
                   <div className="report-stats">
                     <div className="stat">LAQ Documents: {report.total_laq_documents}</div>
                     <div className="stat">Annexures: {report.total_annexures}</div>
+                    <div className="stat">Uploaded Annexures: <span className="uploaded-count">{report.total_uploaded_annexures}</span></div>
+                  </div>
+
+                  <div className="annexure-info">
+                    <p className="info-text">✓ Uploaded annexures are stored and searchable. They may show as "not mentioned" if the LAQ answer doesn't explicitly reference them.</p>
                   </div>
 
                   {report.referenced_annexures.length > 0 && (
                     <div className="annexure-list">
-                      <strong>Referenced:</strong> {report.referenced_annexures.join(', ')}
+                      <strong>Mentioned in answer:</strong> {report.referenced_annexures.join(', ')}
                     </div>
                   )}
 
                   {report.available_annexures.length > 0 && (
                     <div className="annexure-list">
-                      <strong>Available:</strong> {report.available_annexures.join(', ')}
+                      <strong>Available (Uploaded):</strong> {report.available_annexures.join(', ')}
                     </div>
                   )}
 

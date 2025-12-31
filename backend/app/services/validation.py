@@ -31,21 +31,32 @@ class ValidationService:
 
         Args:
             laq_number: LAQ number to validate
-            pdf_name: PDF name to validate
+            pdf_name: PDF name to validate (can be "unknown" if not set)
 
         Returns:
             Validation report dictionary
         """
         try:
-            # Get LAQ documents for this number and PDF
-            laq_results = self.db.collection.get(
-                where={
+            # Get LAQ documents for this number
+            # If pdf_name is "unknown", get all LAQs with this number regardless of pdf
+            if pdf_name == "unknown":
+                where_clause = {
+                    "$and": [
+                        {"laq_num": str(laq_number)},
+                        {"type": {"$ne": "annexure"}},
+                    ]
+                }
+            else:
+                where_clause = {
                     "$and": [
                         {"laq_num": str(laq_number)},
                         {"pdf": pdf_name},
-                        {"type": {"$ne": "annexure"}},  # Exclude annexures
+                        {"type": {"$ne": "annexure"}},
                     ]
-                },
+                }
+
+            laq_results = self.db.collection.get(
+                where=where_clause,
                 include=["metadatas", "documents"],
             )
 
@@ -77,11 +88,13 @@ class ValidationService:
             # Check for unreferenced annexures
             unreferenced_annexures = available_annexures - referenced_annexures
 
+            
             return {
                 "laq_number": laq_number,
                 "pdf_name": pdf_name,
                 "total_laq_documents": len(laq_results.get("metadatas", [])),
                 "total_annexures": len(annexure_results.get("metadatas", [])),
+                "total_uploaded_annexures": len(available_annexures),
                 "referenced_annexures": sorted(list(referenced_annexures)),
                 "available_annexures": sorted(list(available_annexures)),
                 "missing_annexures": sorted(list(missing_annexures)),
@@ -92,18 +105,6 @@ class ValidationService:
                     else "invalid"
                 ),
                 "issues": [
-                    (
-                        f"Missing annexure(s): {', '.join(sorted(missing_annexures))}"
-                        if missing_annexures
-                        else None
-                    ),
-                    (
-                        f"Unreferenced annexure(s): {', '.join(sorted(unreferenced_annexures))}"
-                        if unreferenced_annexures
-                        else None
-                    ),
-                ],
-                "issues": [
                     issue
                     for issue in [
                         (
@@ -112,7 +113,7 @@ class ValidationService:
                             else None
                         ),
                         (
-                            f"Unreferenced annexure(s): {', '.join(sorted(unreferenced_annexures))}"
+                            f"Uploaded but not mentioned in answer: {', '.join(sorted(unreferenced_annexures))}"
                             if unreferenced_annexures
                             else None
                         ),
@@ -126,6 +127,68 @@ class ValidationService:
         except Exception as e:
             raise ValidationError(f"Unexpected error during validation: {e}")
 
+    def check_annexure_referenced_in_laq(self, laq_number: str, annexure_label: str) -> Tuple[bool, Optional[str]]:
+        """Check if an annexure is referenced in a LAQ's answer.
+        
+        Args:
+            laq_number: LAQ number to check
+            annexure_label: Annexure label to search for (e.g., "I", "II", "III")
+            
+        Returns:
+            Tuple of (is_referenced: bool, laq_document_ids: Optional[List[str]])
+            Returns True and list of document IDs if referenced, False and None otherwise
+        """
+        try:
+            # Normalize the input annexure label
+            normalized_input = self._normalize_annexure_label(annexure_label)
+            print(f"🔍 Checking if annexure '{annexure_label}' (normalized: '{normalized_input}') is referenced in LAQ {laq_number}")
+            
+            # Get all LAQ documents for this number (excluding annexures)
+            laq_results = self.db.collection.get(
+                where={
+                    "$and": [
+                        {"laq_num": str(laq_number)},
+                        {"type": {"$ne": "annexure"}},
+                    ]
+                },
+                include=["metadatas"],
+            )
+            
+            # Check if this annexure is referenced in any of the LAQ answers
+            referenced_document_ids = []
+            all_refs_found = []
+            
+            for metadata in laq_results.get("metadatas", []):
+                refs = metadata.get("referenced_annexures", "[]")
+                try:
+                    refs_list = json.loads(refs)
+                    print(f"  Found referenced_annexures in LAQ: {refs_list}")
+                    for ref in refs_list:
+                        normalized_ref = self._normalize_annexure_label(ref)
+                        all_refs_found.append(normalized_ref)
+                        print(f"    Comparing '{ref}' (normalized: '{normalized_ref}') with target '{normalized_input}'")
+                        if normalized_ref == normalized_input:
+                            referenced_document_ids.append(metadata.get("id"))
+                            print(f"    ✓ MATCH FOUND!")
+                            break
+                except (json.JSONDecodeError, TypeError) as e:
+                    print(f"  Error parsing referenced_annexures: {e}")
+            
+            print(f"  All references found in LAQ: {all_refs_found}")
+            print(f"  Match result: {bool(referenced_document_ids)}")
+            
+            if referenced_document_ids:
+                return True, referenced_document_ids
+            else:
+                return False, None
+                
+        except DatabaseError as e:
+            raise ValidationError(f"Database error checking annexure reference: {e}")
+        except Exception as e:
+            import traceback
+            print(f"❌ Error in check_annexure_referenced_in_laq: {e}\n{traceback.format_exc()}")
+            raise ValidationError(f"Unexpected error checking annexure reference: {e}")
+
     def _normalize_annexure_label(self, label: str) -> str:
         """
         Normalize annexure labels to Roman numeral only.
@@ -133,12 +196,33 @@ class ValidationService:
         - "Annexure-I" → "I"
         - "annexure ii" → "II"
         - "III" → "III"
+        - "I" → "I"
+        - "ANEXURES I" → "I"
+        - "Annex I" → "I"
         """
         if not label:
             return ""
 
+        original = label
         label = label.upper().strip()
-        label = re.sub(r"ANNEXURE[-\s]*", "", label)
+        
+        # Try pattern 1: ANNEXURE (with variations) followed by separator and Roman numeral
+        # Handles: "Annexure I", "ANNEXURE-I", "Anexures II", etc.
+        match = re.search(r"ANNEX(?:URE)?S?[-\s]+([IVivXLCDM]+)", label)
+        if match:
+            return match.group(1).upper()
+        
+        # Try pattern 2: ANEXURES (common typo) followed by separator
+        match = re.search(r"ANEXURES?[-\s]+([IVivXLCDM]+)", label)
+        if match:
+            return match.group(1).upper()
+        
+        # Try pattern 3: Just extract any Roman numerals from the label
+        match = re.search(r"([IVivXLCDM]+)", label)
+        if match:
+            return match.group(1).upper()
+        
+        # Fallback: return the original label if no pattern matched
         return label
 
     def validate_all_laqs(self) -> Dict:
@@ -153,12 +237,12 @@ class ValidationService:
                 where={"type": {"$ne": "annexure"}}, include=["metadatas"]
             )
 
-            # Group by LAQ number and PDF
+            # Group by LAQ number (pdf is optional)
             laq_groups = {}
             for metadata in all_results.get("metadatas", []):
                 laq_num = metadata.get("laq_num")
-                pdf = metadata.get("pdf")
-                if laq_num and pdf:
+                pdf = metadata.get("pdf") or "unknown"  # Default to "unknown" if not present
+                if laq_num:
                     key = f"{laq_num}_{pdf}"
                     if key not in laq_groups:
                         laq_groups[key] = {"laq_number": laq_num, "pdf_name": pdf}
