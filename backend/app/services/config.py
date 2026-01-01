@@ -37,9 +37,9 @@ class Config:
     # Processing settings
     markdown_chunk_size: int = int(
         os.getenv("MARKDOWN_CHUNK_SIZE", "20000")
-    )  # Increased for better extraction
+    )  # For LLM extraction only
     metadata_max_length: int = int(os.getenv("METADATA_MAX_LENGTH", "500"))
-    max_context_tokens: int = int(os.getenv("MAX_CONTEXT_TOKENS", "2000"))
+    max_embedding_tokens: int = int(os.getenv("MAX_EMBEDDING_TOKENS", "256"))  # For embedding model
 
     # Performance optimizations
     use_batch_embeddings: bool = (

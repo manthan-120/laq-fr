@@ -106,15 +106,25 @@ class RAGService:
                 doc = documents[i] if i < len(documents) else ""
 
                 # Attach annexure content (preview + full) to metadata for UI display
+                # First, collect referenced annexures
                 annexure_data = self._collect_annexure_content(
                     laq_num=meta.get("laq_num", ""),
                     referenced_raw=meta.get("referenced_annexures", "[]"),
                     preview_chars=800,
                 )
-                if annexure_data["preview"] or annexure_data["full"]:
+                
+                # Also collect ALL available annexures for this LAQ
+                all_annexure_data = self._collect_all_annexures(
+                    laq_num=meta.get("laq_num", ""),
+                    preview_chars=800,
+                )
+                
+                if annexure_data["preview"] or annexure_data["full"] or all_annexure_data["preview"]:
                     meta = dict(meta)
                     meta["annexure_content_preview"] = annexure_data["preview"]
                     meta["annexure_content_full"] = annexure_data["full"]
+                    meta["all_annexure_content_preview"] = all_annexure_data["preview"]
+                    meta["all_annexure_content_full"] = all_annexure_data["full"]
 
                 formatted_results.append(
                     {
@@ -319,6 +329,33 @@ ANSWER:"""
             if doc_text:
                 preview.append(f"Annexure {label}:\n{doc_text[:preview_chars]}")
                 full.append(f"Annexure {label}:\n{doc_text}")
+        return {"preview": preview, "full": full}
+
+    def _collect_all_annexures(
+        self,
+        laq_num: str,
+        preview_chars: int = 800,
+    ) -> Dict[str, List[str]]:
+        """Fetch ALL available annexure content for a LAQ (not just referenced).
+
+        Returns a dict with preview (truncated) and full content lists.
+        """
+        try:
+            annexures = self.db.get_annexures_for_laq(laq_num)
+        except Exception:
+            return {"preview": [], "full": []}
+
+        preview: List[str] = []
+        full: List[str] = []
+        
+        for idx, meta in enumerate(annexures.get("metadatas", [])):
+            if meta.get("type") == "annexure":
+                label = meta.get("annexure_label", "")
+                doc_text = annexures.get("documents", [[]])[idx]
+                if label and doc_text:
+                    preview.append(f"Annexure {label}:\n{doc_text[:preview_chars]}")
+                    full.append(f"Annexure {label}:\n{doc_text}")
+        
         return {"preview": preview, "full": full}
 
     def get_match_quality_stats(self, results: List[Dict]) -> Dict[str, int]:

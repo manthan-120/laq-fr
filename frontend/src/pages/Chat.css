@@ -1,78 +1,199 @@
-/* Chat Input Container */
-.chat-input-container {
-  padding: var(--size-md);
-  border-top: 1px solid var(--border-color);
-  background: var(--background-raised);
+/* Chat Page Container */
+.chat-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
 }
 
-/* Input Form - Flex layout */
-.chat-input-form {
-  display: flex;
-  align-items: center;
-  gap: var(--size-sm);
-}
-
-/* Align Chat.jsx's form elements on a single line with gap */
+/* Chat Form */
 .chat-form {
   display: flex;
-  align-items: center; /* vertical alignment */
-  gap: var(--size-sm); /* consistent spacing between textarea and button */
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .chat-form textarea {
-  flex: 1; /* take remaining width */
-  resize: vertical; /* allow vertical resize only */
-  margin-bottom: 0; /* remove extra bottom margin to keep in-line */
-}
-
-.chat-form button[type="submit"] {
-  margin: 0; /* rely on gap for spacing */
-  white-space: nowrap; /* keep label on one line */
-}
-
-/* Textarea */
-.chat-input {
-  flex: 1;
-  resize: none;
-  padding: var(--size-sm);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--background-subtle);
-  color: var(--foreground-color);
+  padding: 12px;
+  border: 1px solid #999;
+  font-family: inherit;
   font-size: 14px;
-  line-height: 1.4;
+  resize: vertical;
+  min-height: 80px;
 }
 
-/* Submit Button */
-.chat-send-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-primary);
-  color: var(--background-base);
-  border-radius: 8px;
-  padding: 10px 14px;
+.chat-form textarea:focus {
+  outline: 2px solid #1f4fa3;
+}
+
+.chat-form button {
+  padding: 10px 20px;
+  background: #1f4fa3;
+  color: #ffffff;
+  border: none;
+  font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  align-self: flex-start;
 }
 
-.chat-send-button:hover {
-  background: var(--accent-primary-hover);
-}
-
-.chat-send-button:disabled {
-  background: var(--accent-primary-subtle);
+.chat-form button:disabled {
+  background: #aaaaaa;
   cursor: not-allowed;
 }
 
-/* Ensure spacing for the submit button within Chat form used by Chat.jsx */
-.chat-form button[type="submit"] {
-  margin-top: var(--size-sm);
-  margin-left: var(--size-sm);
-  padding: 10px 14px; /* inner space for better touch target */
+/* Assistant Result */
+.assistant-result {
+  background: #f5f9ff;
+  border: 1px solid #ddd;
+  padding: 16px;
+  border-radius: 4px;
 }
 
-/* Optional: layout spacing between textarea and button when stacked */
-.chat-form textarea {
-  margin-bottom: var(--size-sm);
+.assistant-result h3 {
+  margin-top: 0;
+  color: #1f4fa3;
+  font-size: 16px;
+}
+
+.answer-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+/* Sources Container */
+.source-details {
+  margin-top: 20px;
+  border-top: 2px solid #ddd;
+  padding-top: 16px;
+}
+
+.source-details h4 {
+  color: #1f4fa3;
+  font-size: 15px;
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Source Card */
+.source-card {
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-left: 4px solid #1f4fa3;
+  padding: 12px;
+  border-radius: 2px;
+}
+
+.source-header {
+  margin-bottom: 12px;
+}
+
+.source-info {
+  font-size: 13px;
+}
+
+.source-laq {
+  font-weight: 600;
+  color: #1f4fa3;
+  margin-bottom: 4px;
+}
+
+.source-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #666;
+}
+
+.source-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Source Q&A */
+.source-q-a {
+  background: #f9f9f9;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+.source-question {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.source-answer {
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Source Annexures */
+.source-annexures {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.annexure-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f4fa3;
+  margin-bottom: 8px;
+}
+
+.annexure-item {
+  background: #f5f9ff;
+  border-left: 3px solid #1f4fa3;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 2px;
+}
+
+.annexure-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f4fa3;
+  margin-bottom: 6px;
+}
+
+.annexure-meta {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.annexure-content {
+  font-size: 12px;
+  color: #333;
+  line-height: 1.4;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.annexure-content pre {
+  background: #ffffff;
+  border: 1px solid #ddd;
+  padding: 8px;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border-radius: 2px;
 }

@@ -127,10 +127,10 @@ class LAQDatabase:
     def store_annexure(
         self,
         laq_num: str,
-        pdf_name: str,
         annexure_label: str,
         content_text: str,
         embedding: List[float],
+        pdf_name: Optional[str] = None,
         extra_meta: Optional[Dict] = None,
     ) -> str:
         """Store annexure content as a separate document in the collection.
@@ -140,7 +140,8 @@ class LAQDatabase:
         Raises DatabaseError if insertion fails.
         """
         try:
-            base_id = f"{Path(pdf_name).stem}_{laq_num}_annex_{annexure_label.replace(' ', '_')}"
+            # Generate ID from laq_num and annexure_label (pdf_name is no longer required)
+            base_id = f"{laq_num}_annex_{annexure_label.replace(' ', '_')}"
             doc_id = base_id
             # Ensure uniqueness
             i = 1
@@ -149,7 +150,6 @@ class LAQDatabase:
                 doc_id = f"{base_id}_{i}"
 
             metadata = {
-                "pdf": pdf_name,
                 "laq_num": str(laq_num),
                 "type": "annexure",
                 "annexure_label": annexure_label,
@@ -178,6 +178,28 @@ class LAQDatabase:
         except Exception as e:
             raise DatabaseError(f"Failed to fetch annexures: {e}") from e
 
+    def annexure_already_uploaded(self, laq_num: str, annexure_label: str) -> bool:
+        """Check if an annexure with the given LAQ number and label already exists.
+        
+        Args:
+            laq_num: LAQ number
+            annexure_label: Annexure label to check
+            
+        Returns:
+            True if annexure already exists, False otherwise
+        """
+        try:
+            where_clause = {
+                "$and": [
+                    {"laq_num": str(laq_num)},
+                    {"type": "annexure"},
+                    {"annexure_label": annexure_label}
+                ]
+            }
+            results = self.collection.get(where=where_clause, include=[])
+            return len(results.get("ids", [])) > 0
+        except Exception as e:
+            raise DatabaseError(f"Failed to check annexure existence: {e}") from e    
     def _extract_annexure_labels(self, text: str) -> List[str]:
         """Heuristically extract annexure labels from text.
 

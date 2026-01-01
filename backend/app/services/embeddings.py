@@ -56,6 +56,21 @@ class EmbeddingService:
                 f"Error: {e}"
             ) from e
 
+    def _truncate_text(self, text: str) -> str:
+        """Truncate text to fit within embedding model context.
+
+        The nomic-embed-text model has limited context (~256 tokens).
+        Approximate 4 characters per token.
+        """
+        if not text:
+            return text
+        # Use max_embedding_tokens (default 256 tokens = ~1024 chars)
+        max_chars = max(128, self.config.max_embedding_tokens * 4)
+        if len(text) <= max_chars:
+            return text
+        # Just keep the first part (most important for embeddings)
+        return text[:max_chars]
+
     def embed_text(self, text: str) -> List[float]:
         """Generate embedding for a single text.
 
@@ -71,6 +86,9 @@ class EmbeddingService:
         """
         if not text or not text.strip():
             raise ValueError("Text cannot be empty")
+
+        # Ensure we stay within model context
+        text = self._truncate_text(text)
 
         try:
             response = ollama.embeddings(model=self.config.embedding_model, prompt=text)

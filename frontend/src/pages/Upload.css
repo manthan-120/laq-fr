@@ -83,3 +83,87 @@
   font-size: 14px;
   color: #444;
 }
+
+/* Annexure Section */
+.annexure-section {
+  border: 1px solid #e0e0e0;
+  background: #f5f9ff;
+  padding: 24px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #1f4fa3;
+}
+
+.section-subtitle {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.annexure-upload-zone {
+  border: 2px dashed #1f4fa3;
+  background: #ffffff;
+  padding: 24px;
+  text-align: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.annexure-upload-zone:hover {
+  border-color: #2a5bc4;
+  background: #f9fbff;
+}
+
+.annexure-drop-zone {
+  cursor: pointer;
+}
+
+.annexure-upload-button {
+  margin-top: 16px;
+  padding: 12px 28px;
+  background: #28a745;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  align-self: center;
+}
+
+.annexure-upload-button:hover {
+  background: #218838;
+}
+
+.annexure-upload-button:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
+
+.manual-annexure-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manual-annexure-input {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
