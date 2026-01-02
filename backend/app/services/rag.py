@@ -107,7 +107,7 @@ class RAGService:
 
                 # Attach annexure content (preview + full) to metadata for UI display
                 annexure_data = self._collect_annexure_content(
-                    laq_num=meta.get("laq_num", ""),
+                    laq_number=meta.get("laq_number", ""),
                     referenced_raw=meta.get("referenced_annexures", "[]"),
                     preview_chars=800,
                 )
@@ -204,7 +204,7 @@ class RAGService:
                 attachments = []
 
             annexure_content = self._collect_annexure_content(
-                laq_num=meta.get("laq_num", ""),
+                laq_number=meta.get("laq_number", ""),
                 referenced_raw=meta.get("referenced_annexures", "[]"),
                 preview_chars=1000,
             )["preview"]
@@ -219,9 +219,9 @@ class RAGService:
             )
 
             part = f"""
-LAQ #{meta.get('laq_num', 'N/A')} ({meta.get('type', 'N/A')}) - {meta.get('date', 'N/A')}
+LAQ #{meta.get('laq_number', 'N/A')} ({meta.get('type', 'N/A')}) - {meta.get('date', 'N/A')}
 Minister: {meta.get('minister', 'N/A')}
-Tabled by: {meta.get('tabled_by', 'N/A')}
+MLA Name: {meta.get('mla_name', 'N/A')}
 Question: {meta.get('question', 'N/A')}
 Answer: {meta.get('answer', 'N/A')}{attachments_text}{annexures_text_block}
 """
@@ -264,7 +264,7 @@ ANSWER:"""
 
     def _collect_annexure_content(
         self,
-        laq_num: str,
+        laq_number: str,
         referenced_raw: Optional[object],
         preview_chars: int = 800,
     ) -> Dict[str, List[str]]:
@@ -286,7 +286,7 @@ ANSWER:"""
             return {"preview": [], "full": []}
 
         try:
-            annexures = self.db.get_annexures_for_laq(laq_num)
+            annexures = self.db.get_annexures_for_laq(laq_number)
         except Exception:
             return {"preview": [], "full": []}
 

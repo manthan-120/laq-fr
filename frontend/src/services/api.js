@@ -62,7 +62,7 @@ export const clearDatabase = async () => {
 
 // ✅ NEW: Fetch all LAQs for Dashboard
 export const getAllLAQs = async () => {
-  const response = await api.get('/api/laqs');
+  const response = await api.get('/api/dashboard/laqs');
   return response.data;
 };
 

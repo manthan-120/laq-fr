@@ -12,6 +12,7 @@ function Dashboard() {
     department: '',
     type: '',
     cutmotion: '',
+    minister: '',
   })
 
   // ✅ Load LAQs from backend
@@ -132,7 +133,8 @@ function Dashboard() {
             <tr>
               <th>LAQ No</th>
               <th>Year</th>
-              <th>MLA Name</th>
+              <th>MLA Name<tr>
+                (tabled by)</tr></th>
               <th>Department</th>
               <th>Demand No</th>
               <th>Type</th>
@@ -140,12 +142,14 @@ function Dashboard() {
               <th>Duplicate</th>
               <th>Date</th>
               <th>Question</th>
+              <th>Minister<tr>
+                (Answered by)</tr></th>
             </tr>
           </thead>
           <tbody>
             {filteredLaqs.map(l => (
-              <tr key={l.laq_no}>
-                <td>{l.laq_no}</td>
+              <tr key={l.laq_number}>
+                <td>{l.laq_number}</td>
                 <td>{l.year}</td>
                 <td>{l.mla_name}</td>
                 <td>{l.department}</td>
@@ -155,6 +159,7 @@ function Dashboard() {
                 <td>{l.duplicate ? 'Yes' : 'No'}</td>
                 <td>{l.date}</td>
                 <td>{l.question}</td>
+                <td>{l.minister}</td>
               </tr>
             ))}
 

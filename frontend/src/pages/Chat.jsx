@@ -48,7 +48,7 @@ function Chat() {
               <ul>
                 {result.sources.map((src, i) => (
                   <li key={i}>
-                    LAQ No: {src.metadata.laq_num} – {src.metadata.department}
+                    LAQ No: {src.metadata.laq_number} – {src.metadata.department}
                   </li>
                 ))}
               </ul>

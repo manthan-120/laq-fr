@@ -264,7 +264,7 @@ function Database() {
           </div>
         </section>
 
-        {/* Storage Info */}
+        {/* Storage Info
         <section className="db-section">
           <div className="section-header">
             <h2 className="section-title">Storage Details</h2>
@@ -301,9 +301,9 @@ function Database() {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
 
-        {/* Features Section */}
+        {/* Features Section
         <section className="db-section">
           <div className="section-header">
             <h2 className="section-title">Database Features</h2>
@@ -358,7 +358,7 @@ function Database() {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
       </div>
     </div>
   )

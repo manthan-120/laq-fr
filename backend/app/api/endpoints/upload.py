@@ -28,8 +28,10 @@ async def upload_pdf(file: UploadFile = File(...)):
     """
 
     # Validate file type
-    if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    # Allow PDF and Word documents
+    allowed_exts = ('.pdf', '.doc', '.docx')
+    if not file.filename.lower().endswith(allowed_exts):
+        raise HTTPException(status_code=400, detail="Only PDF or Word files are allowed (.pdf, .doc, .docx)")
 
     # Create upload directory if not exists
     upload_dir = Path("./uploads")
@@ -72,10 +74,12 @@ async def upload_pdf(file: UploadFile = File(...)):
 
         # Prepare metadata for enhanced embeddings
         laq_metadata = {
-            "laq_type": laq_data.laq_type,
-            "minister": laq_data.minister,
-            "date": laq_data.date,
-            "pdf_title": laq_data.pdf_title,
+            'pdf_title': laq_data.pdf_title,
+            'laq_type': laq_data.laq_type,
+            'laq_number': laq_data.laq_number,
+            'mla_name': laq_data.mla_name,
+            'date': laq_data.date,
+            'minister': laq_data.minister,
         }
 
         # Convert Q&A pairs to dict format
@@ -92,14 +96,14 @@ async def upload_pdf(file: UploadFile = File(...)):
 
         # Store in database
         laq_data_dict = {
-            "pdf_title": laq_data.pdf_title,
-            "laq_type": laq_data.laq_type,
-            "laq_number": laq_data.laq_number,
-            "minister": laq_data.minister,
-            "date": laq_data.date,
-            "tabled_by": laq_data.tabled_by,
-            "attachments": laq_data.attachments,
-            "qa_pairs": qa_pairs_dict,
+            'pdf_title': laq_data.pdf_title,
+            'laq_type': laq_data.laq_type,
+            'laq_number': laq_data.laq_number,
+            'mla_name': laq_data.mla_name,
+            'date': laq_data.date,
+            'minister': laq_data.minister,
+            'attachments': laq_data.attachments,
+            'qa_pairs': qa_pairs_dict
         }
 
         stored_count = db.store_qa_pairs(
@@ -121,8 +125,8 @@ async def upload_pdf(file: UploadFile = File(...)):
             minister=laq_data.minister,
             date=laq_data.date,
             qa_pairs=qa_pairs_response,
-            tabled_by=laq_data.tabled_by,
-            attachments=laq_data.attachments,
+            mla_name=laq_data.mla_name,
+            attachments=laq_data.attachments
         )
 
         return UploadResponse(

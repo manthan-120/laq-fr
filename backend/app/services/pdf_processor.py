@@ -30,10 +30,8 @@ class LAQData(BaseModel):
     qa_pairs: List[QAPair] = Field(
         min_items=1, description="List of question-answer pairs"
     )
-    tabled_by: Optional[str] = Field(None, description="Person who tabled the question")
-    attachments: List[str] = Field(
-        default_factory=list, description="List of attachments"
-    )
+    mla_name: Optional[str] = Field(None, description="Person who tabled the question")
+    attachments: List[str] = Field(default_factory=list, description="List of attachments")
 
 
 class PDFProcessingError(Exception):
@@ -99,10 +97,10 @@ class PDFProcessor:
         return None
 
     def validate_pdf_file(self, pdf_path: str) -> Path:
-        """Validate that the file exists and is a PDF.
+        """Validate that the file exists and is a PDF or Word document.
 
         Args:
-            pdf_path: Path to the PDF file
+            pdf_path: Path to the file
 
         Returns:
             Validated Path object
@@ -118,10 +116,12 @@ class PDFProcessor:
         if not path.is_file():
             raise PDFProcessingError(f"Not a file: {pdf_path}")
 
-        if path.suffix.lower() != ".pdf":
+        # Accept PDF and Word documents
+        allowed_exts = {'.pdf', '.doc', '.docx'}
+        if path.suffix.lower() not in allowed_exts:
             raise PDFProcessingError(
-                f"Not a PDF file: {pdf_path}\n"
-                f"Expected .pdf extension, got {path.suffix}"
+                f"Unsupported file type: {pdf_path}\n"
+                f"Expected one of: {', '.join(sorted(allowed_exts))}, got {path.suffix}"
             )
 
         # Check file size (warn if > 10MB)
@@ -217,9 +217,9 @@ Your goal is to output **well-structured JSON** where:
   "pdf_title": "TENDER ISSUED FOR LEASING OF JETTY SPACE",
   "laq_type": "Starred",
   "laq_number": "010C",
-  "minister": "Shri. Aleixo Sequeira, Minister for Captain of Ports Department",
-  "tabled_by": "Shri Digambar Kamat",
+  "mla_name": "Shri Digambar Kamat",
   "date": "08-08-2025",
+  "minister": "Shri. Aleixo Sequeira",
   "qa_pairs": [
     {{
       "question": "(a) the details with the total number of jetty spots available in the river Mandovi for use by Casino and cruises vessels including location, area of use in sq.mt of all the individual jetty spots with details of all vessels that are using each particular jetty spot and the purpose of usage;",

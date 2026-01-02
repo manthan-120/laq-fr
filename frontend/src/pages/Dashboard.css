@@ -1,10 +1,10 @@
 /* Main container */
 .dashboard {
   max-width: 100%;
-  margin: 0 auto;
-  padding: 16px;
+
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #000;
+  /* border: 2px solid #e0e0e0; */
 }
 
 /* Grid for statistics */
@@ -100,6 +100,34 @@
 
 .laq-table td {
   word-break: break-word;
+}
+
+/* Keep Year (col 2), Type (col 6) and Date (col 9) on a single line */
+.laq-table th:nth-child(2),
+.laq-table td:nth-child(2) {
+  min-width: 80px;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.laq-table th:nth-child(6),
+.laq-table td:nth-child(6) {
+  min-width: 100px;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.laq-table th:nth-child(9),
+.laq-table td:nth-child(9) {
+  min-width: 110px;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Responsive for small screens */
