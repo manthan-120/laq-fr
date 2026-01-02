@@ -72,4 +72,46 @@ export const healthCheck = async () => {
   return response.data;
 };
 
+// Submit manual LAQ entry with files
+export const submitManualLAQ = async (payload, filesMap) => {
+  const formData = new FormData();
+  formData.append('payload', JSON.stringify(payload));
+
+  // filesMap may be an array of File objects or an object of filename->File
+  if (filesMap) {
+    const values = Array.isArray(filesMap) ? filesMap : Object.values(filesMap)
+    // Deduplicate files by filename to avoid uploading same annexure multiple times
+    const uniqueByName = {}
+    values.forEach((f) => {
+      if (!f) return
+      // Only consider actual File/Blob objects
+      if (f instanceof File || (typeof Blob !== 'undefined' && f instanceof Blob)) {
+        const name = f.name || `file_${Object.keys(uniqueByName).length}`
+        if (!uniqueByName[name]) uniqueByName[name] = f
+      }
+    })
+
+    // Append each unique file once. Use a consistent form field name (e.g. 'file')
+    // and include the original filename as the third parameter so backend UploadFile.filename matches payload
+    Object.entries(uniqueByName).forEach(([name, file]) => {
+      formData.append('file', file, name)
+    })
+  }
+
+  // Use native fetch to avoid axios instance default headers interfering
+  const url = API_BASE_URL + '/api/manual-entry/'
+  const resp = await fetch(url, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  })
+
+  if (!resp.ok) {
+    const text = await resp.text()
+    throw new Error(`Server responded ${resp.status}: ${text}`)
+  }
+
+  return resp.json()
+};
+
 export default api;

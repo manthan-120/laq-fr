@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import Search from './pages/Search'
 import Chat from './pages/Chat'
 import Upload from './pages/Upload'
+import ManualLAQEntry from './pages/ManualLAQEntry'
 import Database from './pages/Database'
 import Validation from './pages/Validation'
 
@@ -16,6 +17,7 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/upload" element={<Upload />} />
+          <Route path="/manual-entry" element={<ManualLAQEntry />} />
           <Route path="/database" element={<Database />} />
           <Route path="/validation" element={<Validation />} />
         </Routes>

@@ -13,6 +13,7 @@ function Sidebar() {
     { path: '/search', label: 'Search LAQs' },
     { path: '/chat', label: 'LAQ Assistant' },
     { path: '/upload', label: 'LAQ Intake' },
+    { path: '/manual-entry', label: 'Manual Entry' },
     { path: '/database', label: 'LAQ Repository' },
     { path: '/validation', label: 'Validation' },
   ]

@@ -16,14 +16,14 @@ class QAPair(BaseModel):
     """Model for a question-answer pair."""
 
     question: str = Field(min_length=1, description="The question text")
-    answer: str = Field(min_length=1, description="The answer text")
+    answer: str = Field(min_length=0, description="The answer text")
 
 
 class LAQData(BaseModel):
     """Model for structured LAQ data."""
 
-    pdf_title: str = Field(description="Title of the LAQ document")
-    laq_type: str = Field(description="Type of LAQ (e.g., Starred, Unstarred)")
+    pdf_title: str = Field("", description="Title of the LAQ document")
+    laq_type: str = Field("", description="Type of LAQ (e.g., Starred, Unstarred)")
     laq_number: str = Field(description="LAQ identification number")
     minister: str = Field(description="Name of the minister")
     date: str = Field(description="Date of the LAQ")
@@ -199,55 +199,107 @@ class PDFProcessor:
             print("🤖 Processing with Mistral LLM...")
 
             prompt = f"""
-You are a structured data extraction assistant. Extract Legislative Assembly Question (LAQ) details from the following text.
+           You are a legal–legislative document analysis model.
+Your task is to read the attached Legislative Assembly Question (LAQ) document
+(PDF/DOC) and carefully analyze:
+1. The questions raised by the MLA
+2. The official replies given by the concerned Minister
 
-The text comes from an official LAQ PDF and may include multi-line tables, line breaks, and subparts (a), (b), (c), etc.
+The document may contain:
+- Main questions and their reples.
+- Adjacent questions may be Follow-up sub-questions that depend on earlier questions or an independent question.
+- A single combined reply addressing multiple inter-related questions or multiple separate replies.
 
-Your goal is to output **well-structured JSON** where:
-- Each sub-question (a), (b), (c) becomes a **separate Q&A pair** in the "qa_pairs" list.
-- Questions and answers are **complete**, not truncated.
-- Original wording is **preserved exactly** — do not paraphrase or summarize.
-- Do not merge subparts into a single question.
+Follow-up questions are often linguistically dependent (e.g., “if so”, “thereof”,
+“details”, “reasons”) and MUST NOT be treated as independent standalone questions.
 
----
+You must semantically analyze question dependencies and reply coverage to preserve
+meaning and intent.
 
-### REQUIRED OUTPUT FORMAT
+After analysis, structure the extracted information in the EXACT JSON
+format shown below.
 
+--------------------------------------------------
+REQUIRED JSON SCHEMA (STRICT – DO NOT MODIFY)
+--------------------------------------------------
 {{
-  "pdf_title": "TENDER ISSUED FOR LEASING OF JETTY SPACE",
-  "laq_type": "Starred",
-  "laq_number": "010C",
-  "mla_name": "Shri Digambar Kamat",
-  "date": "08-08-2025",
-  "minister": "Shri. Aleixo Sequeira",
+  "laq_number": string | null,
+  "mla_name": string | null,
+  "type": string | null,
+  "year": string | null,
+  "date": string | null,
+  "minister": string | null,
+  "department": string | null,
+  "demand_no": string | null,
+  "cutmotion": boolean | null,
+  "duplicate": boolean | null,
   "qa_pairs": [
     {{
-      "question": "(a) the details with the total number of jetty spots available in the river Mandovi for use by Casino and cruises vessels including location, area of use in sq.mt of all the individual jetty spots with details of all vessels that are using each particular jetty spot and the purpose of usage;",
-      "answer": "Sir, there are total 12 number of jetty spots in river Mandovi for use by Casino and cruises vessels. The details are enclosed at Annexure - I."
-    }},
-    {{
-      "question": "(b) the details of all tender issued for leasing jetty space in river Mandovi from the year 2020 till date including tender number, financial bid, copy of lease agreement, amounts received year-wise from inception of tender;",
-      "answer": "Santa Monica Jetty (Tourism Department)\\n1. Tender No. GTDC/JETTY/2019-20/3185\\n2. Financial Bid: Rs. 1.23 Cr. Plus taxes\\n3. Copy of lease agreement enclosed at Annexure - II\\n4. Year Amount Received\\n16/07/2023 to 15/07/2024: 1,23,00,000 + GST 22,14,000\\n16/07/2024 to 15/07/2025: 1,23,00,000 + GST 22,14,000"
-    }},
-    {{
-      "question": "(c) the details of the last tender floated by the Government/COP/RND Department for leasing the River Navigation jetty opposite the Old Secretariat including details of all file noting with copy of lease agreement, total amount received by the Government from lease holders from its inception year-wise?",
-      "answer": "Nil"
+      "question": string | null,
+      "answer": string | null
     }}
   ],
-  "attachments": ["Annexure - I", "Annexure - II"]
+  "attachments": [] | null
 }}
 
----
+--------------------------------------------------
+ANALYSIS & EXTRACTION RULES
+--------------------------------------------------
 
-### RULES
-1. Detect and reconstruct full text of each sub-question and its matching answer.
-2. Treat text like "(a) …", "(b) …", "(c) …" as boundaries for new Q&A pairs.
-3. Combine lines until a new sub-question or section begins.
-4. Keep punctuation and formatting (like "\\n" for line breaks) intact.
-5. Output **only valid JSON**. Do not include explanations or extra commentary.
+1. Identify whether the LAQ is STARRED or UNSTARRED from the document text.
+2. Extract the LAQ number exactly as printed (alphanumeric if applicable).
+3. Extract the full name of the MLA who tabled the question.
+4. Extract the year from the document if available.
+5. Extract the date of the question or reply exactly as stated.
+6. Extract the name/designation of the Minister who answered the question.
+7. Extract the Department, Demand No, Cut Motion status, and Duplicate status
+   if present.
+8. Detect all questions and sub-questions, including labels such as (a), (b), (c),
+   numbered formats, or paragraph-style questions.
+9. Identify follow-up questions using linguistic and semantic cues such as:
+   - “if so”, “if yes”, “thereof”, “details of”, “reasons for”
+   - references like “the above”, “the same”, “said proposal”
+10. Determine logical dependency between questions and group inter-related
+    questions conceptually during analysis.
 
-Now extract the structured data in this format from the following text:
+--------------------------------------------------
+QUESTION–ANSWER MAPPING LOGIC (CRITICAL)
+--------------------------------------------------
 
+11. Sometimes a SINGLE COMBINED REPLY answers multiple inter-related questions
+    (main question + follow-up questions).
+12. In such cases:
+    - COPY THE SAME ANSWER TEXT for:
+      • the main question
+      • each dependent follow-up question
+13. Do NOT fragment or paraphrase the combined reply differently for each question.
+14. Ensure that every follow-up question inherits the contextual meaning of its
+    main question.
+15. If a reply indirectly or implicitly answers a question, map it correctly
+    without inventing new information.
+16. If a question exists but no reply is provided:
+    - Set "answer" to an empty string.
+
+--------------------------------------------------
+ATTACHMENTS
+--------------------------------------------------
+
+17. If annexures or attachments are referenced (e.g., “Annexure-I”,
+    “Annexure-II”), list them exactly in the "attachments" array.
+18. If no attachments are mentioned, return an empty array or null.
+
+--------------------------------------------------
+STRICT OUTPUT CONSTRAINTS
+--------------------------------------------------
+
+- Output ONLY valid JSON.
+- Do NOT include markdown, comments, or explanations.
+- Do NOT infer or fabricate missing data.
+- Do NOT change key names, nesting, or ordering.
+- Ensure the JSON is fully parseable.
+- Preserve semantic meaning across main and follow-up questions.
+
+Begin analysis and extraction now.
 {markdown_data[:self.config.markdown_chunk_size]}
 """
 
@@ -314,21 +366,21 @@ Now extract the structured data in this format from the following text:
         # Step 4: Structure with LLM
         laq_data = self.structure_laqs_with_mistral(markdown_data, validated_path)
 
-        # Step 5: Override LAQ number with filename extraction if available
-        if filename_laq_number:
-            print(
-                f"🔄 Overriding LLM-extracted LAQ number '{laq_data.laq_number}' with filename-based '{filename_laq_number}'"
-            )
-            # Create new LAQData with filename-based LAQ number
-            laq_data = LAQData(
-                pdf_title=laq_data.pdf_title,
-                laq_type=laq_data.laq_type,
-                laq_number=filename_laq_number,  # Use filename-based number
-                minister=laq_data.minister,
-                date=laq_data.date,
-                qa_pairs=laq_data.qa_pairs,
-                tabled_by=laq_data.tabled_by,
-                attachments=laq_data.attachments,
-            )
+        # # Step 5: Override LAQ number with filename extraction if available
+        # if filename_laq_number:
+        #     print(
+        #         f"🔄 Overriding LLM-extracted LAQ number '{laq_data.laq_number}' with filename-based '{filename_laq_number}'"
+        #     )
+        #     # Create new LAQData with filename-based LAQ number
+        #     laq_data = LAQData(
+        #         pdf_title=laq_data.pdf_title,
+        #         laq_type=laq_data.laq_type,
+        #         laq_number=filename_laq_number,  # Use filename-based number
+        #         minister=laq_data.minister,
+        #         date=laq_data.date,
+        #         qa_pairs=laq_data.qa_pairs,
+        #         tabled_by=laq_data.tabled_by,
+        #         attachments=laq_data.attachments,
+        #     )
 
         return laq_data

@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.endpoints import ( annexure, annexure_list, chat, database, search, upload, validation, dashboard, )
+from app.api.endpoints import manual_entry
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -39,6 +40,7 @@ app.include_router(search.router, prefix="/api/search", tags=["search"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(database.router, prefix="/api/database", tags=["database"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
+app.include_router(manual_entry.router, prefix="/api/manual-entry", tags=["manual-entry"])
 
 # app.include_router(laqs.router, prefix="/api/laqs", tags=["laqs"])
 app.include_router(validation.router, prefix="/api/validation", tags=["validation"])

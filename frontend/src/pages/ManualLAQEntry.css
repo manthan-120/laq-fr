@@ -1,0 +1,71 @@
+.manual-page {
+  padding: 24px;
+}
+
+.manual-container {
+  max-width: 900px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.manual-form .form-row {
+  margin-bottom: 12px;
+}
+
+.manual-form label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.manual-form input[type="text"],
+.manual-form input[type="date"],
+.manual-form select,
+.manual-form textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #dcdcdc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.manual-form textarea { min-height: 80px }
+
+.small-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px }
+
+.qa-section { margin-top: 18px }
+.qa-item { border: 1px solid #eee; padding: 12px; border-radius: 6px; margin-bottom: 12px }
+.qa-header { display: flex; justify-content: space-between; align-items: center }
+.qa-index { font-weight: 700 }
+.qa-actions button { margin-left: 8px }
+
+.attachments-list { margin-top: 8px }
+.attachment-item { font-size: 13px; color: #333; margin-bottom: 4px }
+
+.qa-node { margin-top: 8px }
+.reply-item { border: 1px solid #f1f1f1; padding: 8px; border-radius: 6px; margin-bottom: 8px }
+.reply-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 6px }
+.followups { margin-top: 8px }
+
+.qa-row { display: flex; gap: 16px; align-items: flex-start }
+.qa-col { flex: 1 }
+.qa-col-question { max-width: 45% }
+.qa-col-replies { max-width: 55% }
+.reply-item textarea { width: 100%; }
+.attachments-list { margin-top: 8px }
+.attachment-item { font-size: 13px; color: #333; margin-bottom: 4px }
+
+.form-actions { margin-top: 18px; text-align: right }
+button.primary { background: #0b74de; color: #fff; padding: 8px 14px; border-radius: 6px; border: none }
+button.small { padding: 6px 8px; font-size: 13px }
+button.danger { background: #ff5959; color: #fff; border: none; padding: 6px 8px; border-radius: 4px }
+button { cursor: pointer }
+
+@media (max-width: 800px) {
+  .small-grid { grid-template-columns: repeat(2, 1fr) }
+  .qa-row { flex-direction: column }
+  .qa-col-question, .qa-col-replies { max-width: 100% }
+}
