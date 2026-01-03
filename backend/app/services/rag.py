@@ -59,7 +59,7 @@ class RAGService:
         try:
             # Format query to match the enhanced embedding format used during storage
             # This improves semantic matching by using the same format
-            formatted_query = f"Question: {query}\nAnswer: "
+            formatted_query = f"Question: {query}"
 
             # Generate query embedding
             query_embedding = self.embeddings.embed_text(formatted_query)
@@ -162,8 +162,41 @@ class RAGService:
                     [],
                 )
 
-            # Build context from retrieved LAQs
-            context = self._build_context(results)
+            # Always pick the highest matching chunk
+            top_result = results[0]
+
+            # If the top chunk references annexures, gather annexure chunks for that question; otherwise use only the top chunk
+            annex_context_entries = []
+            top_meta = top_result.get("metadata", {})
+            attachments_raw = top_meta.get("attachments", "[]")
+            try:
+                attachments = json.loads(attachments_raw) if isinstance(attachments_raw, str) else attachments_raw
+            except Exception:
+                attachments = []
+
+            if attachments:
+                annex_context_entries = self._fetch_annex_entries_by_metadata(
+                    main_meta=top_meta,
+                    attachments=attachments,
+                )
+
+            if annex_context_entries:
+                context = self._build_annex_context(top_result, annex_context_entries)
+                source_results = [top_result] + [
+                    {
+                        "id": f"annex_{i}",
+                        "similarity": top_result.get("similarity", 0),
+                        "match_quality": top_result.get("match_quality", ""),
+                        "match_color": top_result.get("match_color", ""),
+                        "metadata": entry["metadata"],
+                        "document": entry["document"],
+                    }
+                    for i, entry in enumerate(annex_context_entries, start=1)
+                ]
+            else:
+                # No annexures: use only the top chunk for summarisation as requested
+                context = self._build_context([top_result])
+                source_results = [top_result]
 
             # Generate response with improved prompt
             prompt = self._build_chat_prompt(context, query)
@@ -178,7 +211,7 @@ class RAGService:
                 },
             )
 
-            return response["response"], results
+            return response["response"], source_results
 
         except Exception as e:
             raise RAGError(f"Chat generation failed: {e}") from e
@@ -228,6 +261,98 @@ Answer: {meta.get('answer', 'N/A')}{attachments_text}{annexures_text_block}
             context_parts.append(part.strip())
 
         return "\n\n---\n\n".join(context_parts)
+
+    def _build_annex_context(self, main_result: Dict, annex_entries: List[Dict]) -> str:
+        """Build context prioritizing the top main chunk and its annexure chunks."""
+        context_parts = []
+
+        # Main chunk context (question + reply in metadata)
+        meta = main_result.get("metadata", {})
+        attachments_raw = meta.get("attachments", "[]")
+        try:
+            attachments = json.loads(attachments_raw) if isinstance(attachments_raw, str) else attachments_raw
+        except Exception:
+            attachments = []
+
+        main_part = f"""
+LAQ #{meta.get('laq_number', 'N/A')} ({meta.get('type', 'N/A')}) - {meta.get('date', 'N/A')}
+Minister: {meta.get('minister', 'N/A')}
+MLA Name: {meta.get('mla_name', 'N/A')}
+Question: {meta.get('question', 'N/A')}
+Answer: {meta.get('answer', 'N/A')}
+Attachments: {', '.join(attachments) if attachments else 'None'}
+"""
+        context_parts.append(main_part.strip())
+
+        # Annexure chunk contexts
+        for entry in annex_entries:
+            a_meta = entry.get("metadata", {})
+            a_doc = entry.get("document", "")
+            context_parts.append(
+                f"""
+Annexure File: {a_meta.get('annexure_file', 'N/A')} | Sheet: {a_meta.get('annexure_sheet', '')}
+LAQ #{a_meta.get('laq_number', 'N/A')} ({a_meta.get('laq_type', 'N/A')})
+Question (from metadata): {a_meta.get('question', 'N/A')}
+Answer (from metadata): {a_meta.get('answer', 'N/A')}
+Annexure Content:
+{a_doc}
+""".strip()
+            )
+
+        return "\n\n---\n\n".join(context_parts)
+
+    def _fetch_annex_entries_by_metadata(
+        self, main_meta: Dict, attachments: List[str]
+    ) -> List[Dict]:
+        """Fetch annexure chunks that share LAQ-level metadata with the top chunk, filtering by attachment filenames."""
+        laq_number = main_meta.get("laq_number", "")
+        target_laq_type = main_meta.get("laq_type")
+        target_mla = main_meta.get("mla_name")
+        target_date = main_meta.get("date")
+        target_answer = main_meta.get("answer")
+
+        try:
+            annex = self.db.get_annexures_for_laq(laq_number) or {}
+        except Exception:
+            annex = {}
+
+        metas = annex.get("metadatas", []) or []
+        docs_raw = annex.get("documents", []) or []
+        docs = docs_raw[0] if isinstance(docs_raw, list) and docs_raw else []
+
+        def _match_filename(fname: str, meta_file: str) -> bool:
+            if not fname or not meta_file:
+                return False
+            if fname.lower() == meta_file.lower():
+                return True
+            from pathlib import Path
+
+            return Path(fname).stem.lower() == Path(meta_file).stem.lower()
+
+        entries: List[Dict] = []
+        for idx, meta in enumerate(metas):
+            # Metadata alignment checks
+            if str(meta.get("laq_number", "")) != str(laq_number):
+                continue
+            if target_laq_type is not None and meta.get("laq_type") != target_laq_type:
+                continue
+            if target_mla is not None and meta.get("mla_name") != target_mla:
+                continue
+            if target_date is not None and meta.get("date") != target_date:
+                continue
+            if target_answer is not None and meta.get("answer") != target_answer:
+                continue
+
+            meta_file = meta.get("annexure_file", "")
+            if attachments and not any(_match_filename(fname, meta_file) for fname in attachments):
+                continue
+
+            doc_text = ""
+            if docs and idx < len(docs):
+                doc_text = docs[idx]
+            entries.append({"metadata": meta, "document": doc_text})
+
+        return entries
 
     def _build_chat_prompt(self, context: str, query: str) -> str:
         """Build an improved prompt for chat generation.

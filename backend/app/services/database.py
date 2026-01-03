@@ -31,8 +31,14 @@ class LAQDatabase:
         self.config = config
         try:
             self.client = chromadb.PersistentClient(path=str(config.db_path))
+            # Main collection for questions
             self.collection = self.client.get_or_create_collection(
                 name=config.collection_name, metadata={"hnsw:space": "cosine"}
+            )
+            # Separate annexure collection for annexure contents
+            self.annex_collection = self.client.get_or_create_collection(
+                name=getattr(config, "annexure_collection_name", f"{config.collection_name}_annexures"),
+                metadata={"hnsw:space": "cosine"},
             )
         except Exception as e:
             raise DatabaseError(f"Failed to initialize database: {e}") from e
@@ -142,9 +148,9 @@ class LAQDatabase:
         try:
             base_id = f"{Path(pdf_name).stem}_{laq_number}_annex_{annexure_label.replace(' ', '_')}"
             doc_id = base_id
-            # Ensure uniqueness
+            # Ensure uniqueness in annex collection
             i = 1
-            while self._id_exists(doc_id):
+            while self._id_exists(doc_id, annex=True):
                 i += 1
                 doc_id = f"{base_id}_{i}"
 
@@ -157,7 +163,7 @@ class LAQDatabase:
             if extra_meta:
                 metadata.update(extra_meta)
 
-            self.collection.add(
+            self.annex_collection.add(
                 ids=[doc_id],
                 embeddings=[embedding],
                 metadatas=[metadata],
@@ -171,12 +177,44 @@ class LAQDatabase:
         """Retrieve annexure documents for the given LAQ number."""
         try:
             where_clause = {"$and": [{"laq_number": str(laq_number)}, {"type": "annexure"}]}
-            return self.collection.get(
+            return self.annex_collection.get(
                 where=where_clause,
                 include=["metadatas", "documents"],
             )
         except Exception as e:
             raise DatabaseError(f"Failed to fetch annexures: {e}") from e
+
+    def get_annexures_for_question(self, laq_number: str, qa_index: str) -> Dict:
+        """Retrieve annexure documents for a specific question (by LAQ number and qa_index)."""
+        try:
+            where_clause = {
+                "$and": [
+                    {"laq_number": str(laq_number)},
+                    {"qa_index": qa_index},
+                ]
+            }
+            return self.annex_collection.get(
+                where=where_clause,
+                include=["metadatas", "documents"],
+            )
+        except Exception as e:
+            raise DatabaseError(f"Failed to fetch annexures for question {qa_index}: {e}") from e
+
+    def get_annexures_by_file(self, laq_number: str, annexure_file: str) -> Dict:
+        """Retrieve annexure documents filtered by LAQ number and annexure file name."""
+        try:
+            where_clause = {
+                "$and": [
+                    {"laq_number": str(laq_number)},
+                    {"annexure_file": annexure_file},
+                ]
+            }
+            return self.annex_collection.get(
+                where=where_clause,
+                include=["metadatas", "documents"],
+            )
+        except Exception as e:
+            raise DatabaseError(f"Failed to fetch annexures for file {annexure_file}: {e}") from e
 
     def _extract_annexure_labels(self, text: str) -> List[str]:
         """Heuristically extract annexure labels from text.
@@ -292,19 +330,21 @@ class LAQDatabase:
             print(f"⚠️ Failed to get count: {e}")
             return 0
 
-    def _id_exists(self, doc_id: str) -> bool:
-        """Check if a document ID already exists in the collection.
+    def _id_exists(self, doc_id: str, annex: bool = False) -> bool:
+        """Check if a document ID already exists in a collection.
 
         Args:
             doc_id: Document ID to check
+            annex: If True, check the annexure collection; otherwise check main collection.
 
         Returns:
             True if ID exists, False otherwise
         """
         try:
-            result = self.collection.get(ids=[doc_id])
-            return len(result["ids"]) > 0
-        except:
+            target = self.annex_collection if annex else self.collection
+            result = target.get(ids=[doc_id])
+            return len(result.get("ids", [])) > 0
+        except Exception:
             return False
 
     def pdf_already_processed(self, pdf_name: str, laq_number: str = None) -> bool:

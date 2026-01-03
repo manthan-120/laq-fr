@@ -55,6 +55,9 @@ class Config:
         os.getenv("SKIP_DUPLICATE_PDFS", "true").lower() == "true"
     )
 
+    # Annexure collection name (separate VectorDB for annexure contents)
+    annexure_collection_name: str = os.getenv("ANNEXURE_COLLECTION_NAME", "laqs_annexures")
+
     # LLM generation settings
     llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
     llm_top_p: float = float(os.getenv("LLM_TOP_P", "0.9"))

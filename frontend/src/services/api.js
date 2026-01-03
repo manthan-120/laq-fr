@@ -91,11 +91,24 @@ export const submitManualLAQ = async (payload, filesMap) => {
       }
     })
 
+    console.log('🔍 Unique files to upload:', Object.keys(uniqueByName))
+    
     // Append each unique file once. Use a consistent form field name (e.g. 'file')
     // and include the original filename as the third parameter so backend UploadFile.filename matches payload
     Object.entries(uniqueByName).forEach(([name, file]) => {
+      console.log(`📎 Appending file to FormData: ${name}, size: ${file.size}`)
       formData.append('file', file, name)
     })
+  }
+
+  // Debug: Log FormData contents
+  console.log('📤 FormData entries:')
+  for (let pair of formData.entries()) {
+    if (pair[1] instanceof File) {
+      console.log(`  ${pair[0]}: [File] ${pair[1].name} (${pair[1].size} bytes)`)
+    } else {
+      console.log(`  ${pair[0]}: ${typeof pair[1] === 'string' ? pair[1].substring(0, 100) + '...' : pair[1]}`)
+    }
   }
 
   // Use native fetch to avoid axios instance default headers interfering
