@@ -57,20 +57,28 @@ async def manual_entry(request: Request):
         qa_count = 0
     logger.info("Received manual LAQ payload: title=%s laq_number=%s qa_pairs=%d", payload.get("title"), payload.get("laq_number"), qa_count)
     logger.info("Full manual LAQ payload: %s", json.dumps(payload))
-
+    # json.dumps(payload) converts the "payload" object into a JSON-formatted string
 
 
 
 
     # Save uploaded files to temp dir and map by filename
     # Create LAQ-specific directory (sanitized) to avoid filename conflicts across different LAQs
-    raw_laq_number = payload.get("laq_number") or "manual"
+    raw_laq_number = payload.get("laq_number")
     forbidden = set('<>:"/\\|?*')
-    safe_laq_number = "".join(ch if ch not in forbidden else "_" for ch in str(raw_laq_number)).strip()
-    if not safe_laq_number:
-        safe_laq_number = "manual"
+    # safe_laq_number = "".join(ch if ch not in forbidden else "_" for ch in str(raw_laq_number)).strip()
+    safe_laq_number = "".join(ch if ch not in forbidden else "-" for ch in str(raw_laq_number)).strip()
+    # if not safe_laq_number:
+    #     safe_laq_number = "manual"
     upload_dir = Path("./uploads") / safe_laq_number
     upload_dir.mkdir(parents=True, exist_ok=True)
+    # This snippet derives a safe directory name for uploaded files based on the LAQ number in the payload. 
+    # It first fetches laq_number. It defines a set of forbidden filesystem characters (<>:"/\|?*) 
+    # and replaces any occurrence in the LAQ number with underscores, ensuring the string is safe for use as a folder name. 
+    # After trimming whitespace, if the result is empty, it falls back to "manual". 
+    # Finally, it creates a path under ./uploads/<safe_laq_number> and ensures that 
+    # directory exists by calling mkdir with parents=True and exist_ok=True, so nested directories are 
+    # created as needed and no error is raised if the folder already exists.
 
     uploaded_files = {}
     # form can contain UploadFile instances under other keys
@@ -110,7 +118,7 @@ async def manual_entry(request: Request):
     laq_number = payload.get("laq_number")
     mla_name = payload.get("mla_name")
     date = payload.get("date")
-    minister = payload.get("minister") or payload.get("minister_name") or "N/A"
+    minister = payload.get("minister") or "N/A"
 
     stored_docs = 0
 
@@ -136,27 +144,29 @@ async def manual_entry(request: Request):
             # Standalone reply -> store only the question as the document; reply in metadata
             content_text = question
             metadata = {
-                "source": "manual",
+                # "source": "N/A",
                 "laq_title": laq_title,
                 "laq_type": laq_type,
                 "laq_number": str(laq_number),
                 "mla_name": mla_name,
                 "date": date,
                 "minister": minister,
-                "question": question[: config.metadata_max_length],
+                # "question": question[: config.metadata_max_length],
                 "answer": text[: config.metadata_max_length],
                 "attachments": json.dumps([]),
                 "qa_index": qa_index,
             }
             emb = embed_service.embed_text(question)
-            doc_id = f"manual_{laq_number}_{qa_index}"
-            if db._id_exists(doc_id):
-                suffix = 1
-                base = doc_id
-                while db._id_exists(f"{base}_{suffix}"):
-                    suffix += 1
-                doc_id = f"{base}_{suffix}"
-
+            doc_id = f"{laq_number}_{qa_index}"
+            # if db._id_exists(doc_id):
+            #     suffix = 1
+            #     base = doc_id
+            #     while db._id_exists(f"{base}_{suffix}"):
+            #         suffix += 1
+            #     doc_id = f"{base}_{suffix}"
+            # ID collision handling: The code generates a base ID (manual_{laq_number}_{qa_index}), 
+            # then checks if it already exists in the database. If it does, it appends a numeric suffix (_1, _2, etc.) 
+            # until finding a unique ID. This prevents duplicate key errors when re-processing the same LAQ.
             try:
                 db.collection.add(
                     ids=[doc_id],
@@ -174,27 +184,27 @@ async def manual_entry(request: Request):
             # First: store the question in the regular/main vector DB (question as document)
             q_content = question
             q_metadata = {
-                "source": "manual",
+                # "source": "manual",
                 "laq_title": laq_title,
                 "laq_type": laq_type,
                 "laq_number": str(laq_number),
                 "mla_name": mla_name,
                 "date": date,
                 "minister": minister,
-                "question": question[: config.metadata_max_length],
+                # "question": question[: config.metadata_max_length],
                 "answer": text[: config.metadata_max_length],
                 "attachments": attachments_json,
                 "qa_index": qa_index,
             }
             try:
                 q_emb = embed_service.embed_text(question)
-                q_doc_id = f"manual_{laq_number}_{qa_index}"
-                if db._id_exists(q_doc_id):
-                    s = 1
-                    base = q_doc_id
-                    while db._id_exists(f"{base}_{s}"):
-                        s += 1
-                    q_doc_id = f"{base}_{s}"
+                q_doc_id = f"{laq_number}_{qa_index}"
+                # if db._id_exists(q_doc_id):
+                #     s = 1
+                #     base = q_doc_id
+                #     while db._id_exists(f"{base}_{s}"):
+                #         s += 1
+                #     q_doc_id = f"{base}_{s}"
                 db.collection.add(ids=[q_doc_id], embeddings=[q_emb], metadatas=[q_metadata], documents=[q_content])
                 stored_docs += 1
                 diagnostics["stored_ids"].append(q_doc_id)
@@ -214,6 +224,7 @@ async def manual_entry(request: Request):
                         annex = excel_processor.process_excel(str(p))
                         # Convert annexure content to text and chunk
                         full_text = annex.to_text(max_chars=None)
+                        logger.info(f"Extracted text from {fname}, length={(full_text)}")
                         chunks = chunk_text(full_text, max_chars=1000)
 
                         # For each chunk, create metadata including question/answer and store in annex collection
@@ -223,23 +234,17 @@ async def manual_entry(request: Request):
                         for ci, chunk in enumerate(chunks, start=1):
                             doc_text = chunk
                             meta = {
-                                "source": "manual_annexure",
-                                "laq_title": laq_title,
-                                "laq_type": laq_type,
-                                "laq_number": str(laq_number),
-                                "mla_name": mla_name,
-                                "date": date,
-                                "minister": minister,
-                                "question": question[: config.metadata_max_length],
-                                "answer": text[: config.metadata_max_length],
-                                "attachments": attachments_json,
+                                "laq_number": str(laq_number),  # ADD THIS
+                                # "source": "manual_annexure",
+                                # "laq_title": laq_title,
+                                # "laq_type": laq_type,
                                 "annexure_file": annex.file_name,
                                 "annexure_sheet": annex.sheets[0]["name"] if annex.sheets else "",
                                 "qa_index": qa_index,
                             }
                             texts.append(doc_text)
                             metas.append(meta)
-                            ids.append(f"manual_{laq_number}_{qa_index}_annex_{p.stem}_{ci}")
+                            ids.append(f"{laq_number}_{qa_index}_annex_{p.stem}_{ci}")
 
                         # Create embeddings batch for annex chunks
                         embeddings = embed_service.embed_batch([t for t in texts])
@@ -247,16 +252,16 @@ async def manual_entry(request: Request):
                         # Add to annex collection using annex_collection.add
                         try:
                             # Ensure uniqueness per id in annex collection
-                            final_ids = []
-                            for candidate in ids:
-                                cid = candidate
-                                if db._id_exists(cid, annex=True):
-                                    sfx = 1
-                                    base = cid
-                                    while db._id_exists(f"{base}_{sfx}", annex=True):
-                                        sfx += 1
-                                    cid = f"{base}_{sfx}"
-                                final_ids.append(cid)
+                            # final_ids = []
+                            # for candidate in ids:
+                            #     cid = candidate
+                            #     if db._id_exists(cid, annex=True):
+                            #         sfx = 1
+                            #         base = cid
+                            #         while db._id_exists(f"{base}_{sfx}", annex=True):
+                            #             sfx += 1
+                            #         cid = f"{base}_{sfx}"
+                            #     final_ids.append(cid)
                             db.annex_collection.add(ids=final_ids, embeddings=embeddings, metadatas=metas, documents=texts)
                             stored_docs += len(final_ids)
                             diagnostics["stored_ids"].extend(final_ids)
@@ -266,38 +271,38 @@ async def manual_entry(request: Request):
                     except ExcelProcessingError as e:
                         logger.warning(f"Failed to process excel {fname}: {e}")
                         continue
-                else:
-                    # For non-excel annexures, store a small reference entry in annex collection
-                    content_text = f"Annexure reference: {fname}"
-                    metadata = {
-                        "source": "manual_annexure_ref",
-                        "laq_title": laq_title,
-                        "laq_type": laq_type,
-                        "laq_number": str(laq_number),
-                        "mla_name": mla_name,
-                        "date": date,
-                        "minister": minister,
-                        "question": question[: config.metadata_max_length],
-                        "answer": text[: config.metadata_max_length],
-                        "attachments": attachments_json,
-                        "annexure_file": fname,
-                        "qa_index": qa_index,
-                    }
-                    emb = embed_service.embed_text(content_text)
-                    doc_id = f"manual_{laq_number}_{qa_index}_file_{p.stem}"
-                    # ensure uniqueness in annex collection
-                    if db._id_exists(doc_id, annex=True):
-                        suffix = 1
-                        base = doc_id
-                        while db._id_exists(f"{base}_{suffix}", annex=True):
-                            suffix += 1
-                        doc_id = f"{base}_{suffix}"
-                    try:
-                        db.annex_collection.add(ids=[doc_id], embeddings=[emb], metadatas=[metadata], documents=[content_text])
-                        stored_docs += 1
-                        diagnostics["stored_ids"].append(doc_id)
-                    except Exception as e:
-                        diagnostics["skipped"].append({"id": doc_id, "reason": str(e)})
+                # else:
+                #     # For non-excel annexures, store a small reference entry in annex collection
+                #     content_text = f"Annexure reference: {fname}"
+                #     metadata = {
+                #         # "source": "manual_annexure_ref",
+                #         "laq_title": laq_title,
+                #         "laq_type": laq_type,
+                #         "laq_number": str(laq_number),
+                #         "mla_name": mla_name,
+                #         "date": date,
+                #         "minister": minister,
+                #         "question": question[: config.metadata_max_length],
+                #         "answer": text[: config.metadata_max_length],
+                #         "attachments": attachments_json,
+                #         "annexure_file": fname,
+                #         "qa_index": qa_index,
+                #     }
+                #     emb = embed_service.embed_text(content_text)
+                #     doc_id = f"manual_{laq_number}_{qa_index}_file_{p.stem}"
+                #     # ensure uniqueness in annex collection
+                #     if db._id_exists(doc_id, annex=True):
+                #         suffix = 1
+                #         base = doc_id
+                #         while db._id_exists(f"{base}_{suffix}", annex=True):
+                #             suffix += 1
+                #         doc_id = f"{base}_{suffix}"
+                #     try:
+                #         db.annex_collection.add(ids=[doc_id], embeddings=[emb], metadatas=[metadata], documents=[content_text])
+                #         stored_docs += 1
+                #         diagnostics["stored_ids"].append(doc_id)
+                #     except Exception as e:
+                #         diagnostics["skipped"].append({"id": doc_id, "reason": str(e)})
 
     try:
         # Iterate top-level questions

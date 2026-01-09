@@ -59,7 +59,9 @@ class RAGService:
         try:
             # Format query to match the enhanced embedding format used during storage
             # This improves semantic matching by using the same format
-            formatted_query = f"Question: {query}"
+            # formatted_query = f"Question: {query}"
+            formatted_query = f"{query}"
+
 
             # Generate query embedding
             query_embedding = self.embeddings.embed_text(formatted_query)
@@ -105,16 +107,16 @@ class RAGService:
                 meta = metadatas[i]
                 doc = documents[i] if i < len(documents) else ""
 
-                # Attach annexure content (preview + full) to metadata for UI display
-                annexure_data = self._collect_annexure_content(
-                    laq_number=meta.get("laq_number", ""),
-                    referenced_raw=meta.get("referenced_annexures", "[]"),
-                    preview_chars=800,
-                )
-                if annexure_data["preview"] or annexure_data["full"]:
-                    meta = dict(meta)
-                    meta["annexure_content_preview"] = annexure_data["preview"]
-                    meta["annexure_content_full"] = annexure_data["full"]
+                # # Attach annexure content (preview + full) to metadata for UI display
+                # annexure_data = self._collect_annexure_content(
+                #     laq_number=meta.get("laq_number", ""),
+                #     referenced_raw=meta.get("referenced_annexures", "[]"),
+                #     preview_chars=800,
+                # )
+                # if annexure_data["preview"] or annexure_data["full"]:
+                #     meta = dict(meta)
+                #     meta["annexure_content_preview"] = annexure_data["preview"]
+                #     meta["annexure_content_full"] = annexure_data["full"]
 
                 formatted_results.append(
                     {
@@ -126,11 +128,19 @@ class RAGService:
                         "document": doc,
                     }
                 )
-
+            print("Formatted Results from chat()->search():", formatted_results)
             return formatted_results
 
         except Exception as e:
             raise RAGError(f"Search failed: {e}") from e
+
+
+
+
+
+
+
+
 
     def chat(self, query: str, top_k: Optional[int] = None) -> Tuple[str, List[Dict]]:
         """Generate a conversational response based on retrieved LAQs.
@@ -165,6 +175,7 @@ class RAGService:
             # Always pick the highest matching chunk
             top_result = results[0]
 
+
             # If the top chunk references annexures, gather annexure chunks for that question; otherwise use only the top chunk
             annex_context_entries = []
             top_meta = top_result.get("metadata", {})
@@ -175,16 +186,20 @@ class RAGService:
                 attachments = []
 
             if attachments:
+                print("Fetching annexure chunks for chat context...")
                 annex_context_entries = self._fetch_annex_entries_by_metadata(
                     main_meta=top_meta,
                     attachments=attachments,
-                )
+            )
 
             if annex_context_entries:
+                # Include annexure chunks along with top chunk for summarisation
                 context = self._build_annex_context(top_result, annex_context_entries)
                 source_results = [top_result] + [
                     {
-                        "id": f"annex_{i}",
+                        # "id": f"annex_{i}",
+                        # "id": f"{entry.get('ids', 'N/A')}",
+                        "id": f"{entry.get("metadata", {}).get("laq_number", "N/A")}_{entry.get("metadata", {}).get("qa_index","")}_{entry.get("metadata", {}).get("annexure_file","")}_chunk_{i}",
                         "similarity": top_result.get("similarity", 0),
                         "match_quality": top_result.get("match_quality", ""),
                         "match_color": top_result.get("match_color", ""),
@@ -195,7 +210,7 @@ class RAGService:
                 ]
             else:
                 # No annexures: use only the top chunk for summarisation as requested
-                context = self._build_context([top_result])
+                context = self._build_annex_context(top_result, [])
                 source_results = [top_result]
 
             # Generate response with improved prompt
@@ -216,51 +231,18 @@ class RAGService:
         except Exception as e:
             raise RAGError(f"Chat generation failed: {e}") from e
 
-    def _build_context(self, search_results: List[Dict]) -> str:
-        """Build formatted context string from search results.
 
-        Args:
-            search_results: List of search result dictionaries
 
-        Returns:
-            Formatted context string
-        """
-        context_parts = []
 
-        for i, result in enumerate(search_results, 1):
-            meta = result["metadata"]
 
-            # Parse attachments
-            try:
-                attachments = json.loads(meta.get("attachments", "[]"))
-            except Exception:
-                attachments = []
 
-            annexure_content = self._collect_annexure_content(
-                laq_number=meta.get("laq_number", ""),
-                referenced_raw=meta.get("referenced_annexures", "[]"),
-                preview_chars=1000,
-            )["preview"]
 
-            attachments_text = (
-                f"\nAttachments: {', '.join(attachments)}" if attachments else ""
-            )
-            annexures_text_block = (
-                f"\n\nIncluded Annexure Content:\n" + "\n\n".join(annexure_content)
-                if annexure_content
-                else ""
-            )
 
-            part = f"""
-LAQ #{meta.get('laq_number', 'N/A')} ({meta.get('type', 'N/A')}) - {meta.get('date', 'N/A')}
-Minister: {meta.get('minister', 'N/A')}
-MLA Name: {meta.get('mla_name', 'N/A')}
-Question: {meta.get('question', 'N/A')}
-Answer: {meta.get('answer', 'N/A')}{attachments_text}{annexures_text_block}
-"""
-            context_parts.append(part.strip())
 
-        return "\n\n---\n\n".join(context_parts)
+
+
+
+
 
     def _build_annex_context(self, main_result: Dict, annex_entries: List[Dict]) -> str:
         """Build context prioritizing the top main chunk and its annexure chunks."""
@@ -301,18 +283,30 @@ Annexure Content:
 
         return "\n\n---\n\n".join(context_parts)
 
+
+
+
+
+
+
+
+
+
     def _fetch_annex_entries_by_metadata(
         self, main_meta: Dict, attachments: List[str]
     ) -> List[Dict]:
         """Fetch annexure chunks that share LAQ-level metadata with the top chunk, filtering by attachment filenames."""
         laq_number = main_meta.get("laq_number", "")
-        target_laq_type = main_meta.get("laq_type")
-        target_mla = main_meta.get("mla_name")
-        target_date = main_meta.get("date")
-        target_answer = main_meta.get("answer")
+        target_qa_index = main_meta.get("qa_index", "")
+        # target_laq_type = main_meta.get("laq_type")
+        # target_mla = main_meta.get("mla_name")
+        # target_date = main_meta.get("date")
+        # target_answer = main_meta.get("answer")
 
         try:
-            annex = self.db.get_annexures_for_laq(laq_number) or {}
+            # annex = self.db.get_annexures_for_laq(laq_number) or {}
+            annex = self.db.get_annexures_for_question(laq_number, target_qa_index) or {}
+            print(f"Fetched annexure chunks for LAQ {laq_number}, QA Index {target_qa_index}: {len(annex.get('metadatas', []))} entries found.")
         except Exception:
             annex = {}
 
@@ -334,14 +328,16 @@ Annexure Content:
             # Metadata alignment checks
             if str(meta.get("laq_number", "")) != str(laq_number):
                 continue
-            if target_laq_type is not None and meta.get("laq_type") != target_laq_type:
+            if target_qa_index is not None and meta.get("qa_index") != target_qa_index:
                 continue
-            if target_mla is not None and meta.get("mla_name") != target_mla:
-                continue
-            if target_date is not None and meta.get("date") != target_date:
-                continue
-            if target_answer is not None and meta.get("answer") != target_answer:
-                continue
+            # if target_laq_type is not None and meta.get("laq_type") != target_laq_type:
+                # continue
+            # if target_mla is not None and meta.get("mla_name") != target_mla:
+            #     continue
+            # if target_date is not None and meta.get("date") != target_date:
+            #     continue
+            # if target_answer is not None and meta.get("answer") != target_answer:
+            #     continue
 
             meta_file = meta.get("annexure_file", "")
             if attachments and not any(_match_filename(fname, meta_file) for fname in attachments):
@@ -351,8 +347,13 @@ Annexure Content:
             if docs and idx < len(docs):
                 doc_text = docs[idx]
             entries.append({"metadata": meta, "document": doc_text})
-
+        print(f"Filtered annexure chunks for LAQ {laq_number}, QA Index {target_qa_index}: {len(entries)} entries matched.")
         return entries
+
+
+
+
+
 
     def _build_chat_prompt(self, context: str, query: str) -> str:
         """Build an improved prompt for chat generation.
@@ -387,83 +388,87 @@ ANSWER:"""
 
         return prompt
 
-    def _collect_annexure_content(
-        self,
-        laq_number: str,
-        referenced_raw: Optional[object],
-        preview_chars: int = 800,
-    ) -> Dict[str, List[str]]:
-        """Fetch annexure content for referenced labels.
+    # def _collect_annexure_content(
+    #     self,
+    #     laq_number: str,
+    #     referenced_raw: Optional[object],
+    #     preview_chars: int = 800,
+    #     qa_index: str,
+    # ) -> Dict[str, List[str]]:
+    #     """Fetch annexure content for referenced labels.
 
-        Returns a dict with preview (truncated) and full content lists.
-        """
-        try:
-            if referenced_raw is None:
-                return {"preview": [], "full": []}
-            if isinstance(referenced_raw, str):
-                referenced = json.loads(referenced_raw)
-            else:
-                referenced = referenced_raw
-        except Exception:
-            referenced = []
+    #     Returns a dict with preview (truncated) and full content lists.
+    #     """
+    #     try:
+    #         if referenced_raw is None:
+    #             return {"preview": [], "full": []}
+    #         if isinstance(referenced_raw, str):
+    #             referenced = json.loads(referenced_raw)
+    #         else:
+    #             referenced = referenced_raw
+    #     except Exception:
+    #         referenced = []
 
-        if not referenced:
-            return {"preview": [], "full": []}
+    #     if not referenced:
+    #         return {"preview": [], "full": []}
 
-        try:
-            annexures = self.db.get_annexures_for_laq(laq_number)
-        except Exception:
-            return {"preview": [], "full": []}
+    #     try:
+    #         annexures = self.db.get_annexures_for_laq(laq_number,)  # Fetch all annexures for LAQ
+    #     except Exception:
+    #         return {"preview": [], "full": []}
 
-        def _norm(label: str) -> str:
-            # Normalize labels like "Annexure-I", "Annexure I", "I", "II" to a comparable key
-            if not label:
-                return ""
-            cleaned = label.lower().replace("annexure", "")
-            for ch in ["-", "_", ":", ";", ",", "."]:
-                cleaned = cleaned.replace(ch, " ")
-            cleaned = "".join(cleaned.split())
-            return cleaned
+    #     def _norm(label: str) -> str:
+    #         # Normalize labels like "Annexure-I", "Annexure I", "I", "II" to a comparable key
+    #         if not label:
+    #             return ""
+    #         cleaned = label.lower().replace("annexure", "")
+    #         for ch in ["-", "_", ":", ";", ",", "."]:
+    #             cleaned = cleaned.replace(ch, " ")
+    #         cleaned = "".join(cleaned.split())
+    #         return cleaned
 
-        # Map normalized label -> document text (keep original too)
-        label_docs = {}
-        for idx, meta in enumerate(annexures.get("metadatas", [])):
-            if meta.get("type") == "annexure":
-                label = meta.get("annexure_label", "")
-                doc_text = annexures.get("documents", [[]])[idx]
-                if label:
-                    label_docs[_norm(label)] = doc_text
-                    label_docs[label] = doc_text
+    #     # Map normalized label -> document text (keep original too)
+    #     label_docs = {}
+    #     for idx, meta in enumerate(annexures.get("metadatas", [])):
+    #         if meta.get("type") == "annexure":
+    #             label = meta.get("annexure_label", "")
+    #             doc_text = annexures.get("documents", [[]])[idx]
+    #             if label:
+    #                 label_docs[_norm(label)] = doc_text
+    #                 label_docs[label] = doc_text
 
-        preview: List[str] = []
-        full: List[str] = []
-        for label in referenced:
-            key = _norm(label)
-            # Try normalized match first, then raw
-            doc_text = label_docs.get(key) or label_docs.get(label)
-            if doc_text:
-                preview.append(f"Annexure {label}:\n{doc_text[:preview_chars]}")
-                full.append(f"Annexure {label}:\n{doc_text}")
-        return {"preview": preview, "full": full}
+    #     preview: List[str] = []
+    #     full: List[str] = []
+    #     for label in referenced:
+    #         key = _norm(label)
+    #         # Try normalized match first, then raw
+    #         doc_text = label_docs.get(key) or label_docs.get(label)
+    #         if doc_text:
+    #             preview.append(f"Annexure {label}:\n{doc_text[:preview_chars]}")
+    #             full.append(f"Annexure {label}:\n{doc_text}")
+    #     return {"preview": preview, "full": full}
 
-    def get_match_quality_stats(self, results: List[Dict]) -> Dict[str, int]:
-        """Get statistics about match quality distribution.
 
-        Args:
-            results: List of search results
 
-        Returns:
-            Dictionary with counts for each quality level
-        """
-        stats = {"strong": 0, "moderate": 0, "weak": 0}
 
-        for result in results:
-            similarity = result["similarity"]
-            if similarity >= 80:
-                stats["strong"] += 1
-            elif similarity >= 60:
-                stats["moderate"] += 1
-            else:
-                stats["weak"] += 1
+    # def get_match_quality_stats(self, results: List[Dict]) -> Dict[str, int]:
+    #     """Get statistics about match quality distribution.
 
-        return stats
+    #     Args:
+    #         results: List of search results
+
+    #     Returns:
+    #         Dictionary with counts for each quality level
+    #     """
+    #     stats = {"strong": 0, "moderate": 0, "weak": 0}
+
+    #     for result in results:
+    #         similarity = result["similarity"]
+    #         if similarity >= 80:
+    #             stats["strong"] += 1
+    #         elif similarity >= 60:
+    #             stats["moderate"] += 1
+    #         else:
+    #             stats["weak"] += 1
+
+    #     return stats

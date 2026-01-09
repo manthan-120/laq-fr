@@ -13,8 +13,8 @@ from app.services.rag import RAGError, RAGService
 router = APIRouter()
 
 
-@router.post("/", response_model=ChatResponse)
-async def chat_with_laqs(query: ChatQuery) -> ChatResponse:
+@router.post("/", response_model=None)
+async def chat_with_laqs(query: ChatQuery):
     """
     Chat with LAQ knowledge base.
 
@@ -37,16 +37,24 @@ async def chat_with_laqs(query: ChatQuery) -> ChatResponse:
 
         # Convert sources to response model
         sources = [
-            SearchResult(
-                question=source["metadata"]["question"],
-                answer=source["metadata"]["answer"],
-                metadata=source["metadata"],
-                similarity_score=source["similarity"],
-            )
-            for source in source_results
+            {
+                "question": src.get("metadata", {}).get("question", "N/A"),
+                "answer": src.get("metadata", {}).get("answer", "N/A"),
+                "metadata": src.get("metadata", {}),
+                "similarity_score": src.get("similarity", 0),
+                "document": src.get("document"),   # include annex text if present
+            }
+            for src in source_results
         ]
 
-        return ChatResponse(question=query.question, answer=answer, sources=sources)
+        return {"question": query.question, "answer": answer, "sources": sources}
+
+    except RAGError as e:
+        raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
     except RAGError as e:
         raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")

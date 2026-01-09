@@ -47,6 +47,7 @@ class SearchResult(BaseModel):
     answer: str
     metadata: dict
     similarity_score: float
+    # document: Optional[str] = None
 
 
 class SearchResponse(BaseModel):

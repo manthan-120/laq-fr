@@ -8,6 +8,9 @@ import chromadb
 from chromadb.api.models.Collection import Collection
 
 from app.services.config import Config
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseError(Exception):
@@ -173,20 +176,31 @@ class LAQDatabase:
         except Exception as e:
             raise DatabaseError(f"Failed to store annexure: {e}") from e
 
-    def get_annexures_for_laq(self, laq_number: str) -> Dict:
-        """Retrieve annexure documents for the given LAQ number."""
-        try:
-            where_clause = {"$and": [{"laq_number": str(laq_number)}, {"type": "annexure"}]}
-            return self.annex_collection.get(
-                where=where_clause,
-                include=["metadatas", "documents"],
-            )
-        except Exception as e:
-            raise DatabaseError(f"Failed to fetch annexures: {e}") from e
+
+
+
+
+
+
+
+
+    # def get_annexures_for_laq(self, laq_number: str) -> Dict:
+    #     """Retrieve annexure documents for the given LAQ number."""
+    #     try:
+    #         where_clause = {"$and": [{"laq_number": str(laq_number)},]}
+    #         # where_clause = {"$and": [{"laq_number": str(laq_number)}, {"type": "annexure"}]}
+    #         return self.annex_collection.get(
+    #             where=where_clause,
+    #             include=["metadatas", "documents"],
+    #         )
+    #     except Exception as e:
+    #         raise DatabaseError(f"Failed to fetch annexures: {e}") from e
 
     def get_annexures_for_question(self, laq_number: str, qa_index: str) -> Dict:
-        """Retrieve annexure documents for a specific question (by LAQ number and qa_index)."""
+        """Retrieve annexure chunks for a specific question (by LAQ number and qa_index)."""
         try:
+            # Normalize types to avoid mismatches (Chroma stores metadata as strings)
+            qa_index = str(qa_index)
             where_clause = {
                 "$and": [
                     {"laq_number": str(laq_number)},
@@ -200,21 +214,28 @@ class LAQDatabase:
         except Exception as e:
             raise DatabaseError(f"Failed to fetch annexures for question {qa_index}: {e}") from e
 
-    def get_annexures_by_file(self, laq_number: str, annexure_file: str) -> Dict:
-        """Retrieve annexure documents filtered by LAQ number and annexure file name."""
-        try:
-            where_clause = {
-                "$and": [
-                    {"laq_number": str(laq_number)},
-                    {"annexure_file": annexure_file},
-                ]
-            }
-            return self.annex_collection.get(
-                where=where_clause,
-                include=["metadatas", "documents"],
-            )
-        except Exception as e:
-            raise DatabaseError(f"Failed to fetch annexures for file {annexure_file}: {e}") from e
+    # def get_annexures_by_file(self, laq_number: str, annexure_file: str) -> Dict:
+    #     """Retrieve annexure documents filtered by LAQ number and annexure file name."""
+    #     try:
+    #         where_clause = {
+    #             "$and": [
+    #                 {"laq_number": str(laq_number)},
+    #                 {"annexure_file": annexure_file},
+    #             ]
+    #         }
+    #         return self.annex_collection.get(
+    #             where=where_clause,
+    #             include=["metadatas", "documents"],
+    #         )
+    #     except Exception as e:
+    #         raise DatabaseError(f"Failed to fetch annexures for file {annexure_file}: {e}") from e
+
+
+
+
+
+
+
 
     def _extract_annexure_labels(self, text: str) -> List[str]:
         """Heuristically extract annexure labels from text.
@@ -313,6 +334,13 @@ class LAQDatabase:
             self.client.delete_collection(self.config.collection_name)
             self.collection = self.client.get_or_create_collection(
                 name=self.config.collection_name,
+                metadata={"hnsw:space": "cosine"},
+            )
+            # Also clear annexure collection
+            annex_collection_name = getattr(self.config, "annexure_collection_name", f"{self.config.collection_name}_annexures")
+            self.client.delete_collection(annex_collection_name)
+            self.annex_collection = self.client.get_or_create_collection(
+                name=annex_collection_name,
                 metadata={"hnsw:space": "cosine"},
             )
         except Exception as e:
