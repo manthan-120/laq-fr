@@ -4,8 +4,13 @@ from pathlib import Path
 
 import pytest
 from config import Config
-from pdf_processor import LAQData, PDFProcessingError, PDFProcessor, QAPair
+from pdf_processor import PDFProcessingError, PDFProcessor
 from pydantic import ValidationError
+
+# Import the models from schemas
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from app.models.schemas import LAQDataResponse as LAQData, QAPairResponse as QAPair
 
 
 class TestQAPair:
@@ -22,10 +27,11 @@ class TestQAPair:
         with pytest.raises(ValidationError):
             QAPair(question="", answer="Some answer")
 
-    def test_empty_answer_rejected(self):
-        """Test that empty answers are rejected."""
-        with pytest.raises(ValidationError):
-            QAPair(question="Some question?", answer="")
+    def test_empty_answer_allowed(self):
+        """Test that empty answers are allowed (unanswered questions)."""
+        qa = QAPair(question="Some question?", answer="")
+        assert qa.question == "Some question?"
+        assert qa.answer == ""
 
 
 class TestLAQData:
@@ -40,8 +46,8 @@ class TestLAQData:
             minister="Test Minister",
             date="2024-01-01",
             qa_pairs=[
-                QAPair(question="Q1?", answer="A1"),
-                QAPair(question="Q2?", answer="A2"),
+                QAPair(question="Q1?", answer="A1", attachments=["Annex-1"]),
+                QAPair(question="Q2?", answer="A2", attachments=[]),
             ],
         )
         assert laq.pdf_title == "Test LAQ"
@@ -69,10 +75,8 @@ class TestLAQData:
             date="2024-01-01",
             qa_pairs=[QAPair(question="Q?", answer="A")],
             mla_name="Test Person",
-            attachments=["Annex-1", "Annex-2"],
         )
         assert laq.mla_name == "Test Person"
-        assert len(laq.attachments) == 2
 
 
 class TestPDFProcessor:

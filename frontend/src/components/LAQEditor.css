@@ -1,0 +1,267 @@
+/* LAQEditor.css - Styling for the LAQ validation/editing component */
+
+.laq-editor {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.editor-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.editor-header h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+  margin-bottom: 0.5rem;
+}
+
+.editor-subtitle {
+  color: var(--text-secondary, #666);
+  font-size: 0.95rem;
+}
+
+.editor-section {
+  background: white;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+  margin-bottom: 1.25rem;
+}
+
+.section-header-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+/* Metadata Grid */
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary, #1a1a1a);
+  margin-bottom: 0.4rem;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 0.6rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color, #2563eb);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Q&A Editor Cards */
+.qa-editor-card {
+  background: #f9fafb;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.qa-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.qa-header h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.btn-delete-qa {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.btn-delete-qa:hover {
+  background: #dc2626;
+}
+
+/* Attachments Section */
+.attachments-section {
+  margin-top: 0.5rem;
+}
+
+.current-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.attachment-tag {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.remove-attachment {
+  background: transparent;
+  border: none;
+  color: #1e40af;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+
+.remove-attachment:hover {
+  color: #1e3a8a;
+}
+
+.attachment-select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.no-annexures {
+  color: var(--text-secondary, #666);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Buttons */
+.btn-add-qa {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-add-qa:hover {
+  background: #059669;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.btn-confirm {
+  background: var(--primary-color, #2563eb);
+  color: white;
+  border: none;
+}
+
+.btn-confirm:hover {
+  background: #1d4ed8;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .laq-editor {
+    padding: 1rem;
+  }
+
+  .metadata-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header-with-action {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .editor-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    width: 100%;
+    justify-content: center;
+  }
+}

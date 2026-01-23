@@ -7,31 +7,10 @@ from typing import Dict, List, Optional
 
 import ollama
 from docling.document_converter import DocumentConverter
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import ValidationError
 
+from app.models.schemas import LAQDataResponse, QAPairResponse
 from app.services.config import Config
-
-
-class QAPair(BaseModel):
-    """Model for a question-answer pair."""
-
-    question: str = Field(min_length=1, description="The question text")
-    answer: str = Field(min_length=0, description="The answer text")
-
-
-class LAQData(BaseModel):
-    """Model for structured LAQ data."""
-
-    pdf_title: str = Field("", description="Title of the LAQ document")
-    laq_type: str = Field("", description="Type of LAQ (e.g., Starred, Unstarred)")
-    laq_number: str = Field(description="LAQ identification number")
-    minister: str = Field(description="Name of the minister")
-    date: str = Field(description="Date of the LAQ")
-    qa_pairs: List[QAPair] = Field(
-        min_items=1, description="List of question-answer pairs"
-    )
-    mla_name: Optional[str] = Field(None, description="Person who tabled the question")
-    attachments: List[str] = Field(default_factory=list, description="List of attachments")
 
 
 class PDFProcessingError(Exception):
@@ -182,7 +161,7 @@ class PDFProcessor:
 
     def structure_laqs_with_mistral(
         self, markdown_data: str, pdf_path: Path
-    ) -> LAQData:
+    ) -> LAQDataResponse:
         """Use Mistral LLM to extract structured LAQ data from markdown.
 
         Args:
@@ -190,37 +169,30 @@ class PDFProcessor:
             pdf_path: Path to the original PDF file
 
         Returns:
-            Validated LAQData object
+            Validated LAQDataResponse object
 
         Raises:
             PDFProcessingError: If LLM processing or validation fails
         """
         try:
-            print("🤖 Processing with Mistral LLM...")
+            print("DEBUG: 🤖 Extracting JSON from uploaded pdf markdown with Mistral LLM...")
 
             prompt = f"""
-           You are a legal–legislative document analysis model.
+You are a legal legislative document analysis model.
 Your task is to read the attached Legislative Assembly Question (LAQ) document
 (PDF/DOC) and carefully analyze:
 1. The questions raised by the MLA
 2. The official replies given by the concerned Minister
 
-The document may contain:
-- Main questions and their reples.
-- Adjacent questions may be Follow-up sub-questions that depend on earlier questions or an independent question.
-- A single combined reply addressing multiple inter-related questions or multiple separate replies.
-
-Follow-up questions are often linguistically dependent (e.g., “if so”, “thereof”,
-“details”, “reasons”) and MUST NOT be treated as independent standalone questions.
 
 You must semantically analyze question dependencies and reply coverage to preserve
-meaning and intent.
+meaning and intent. 
 
 After analysis, structure the extracted information in the EXACT JSON
 format shown below.
 
 --------------------------------------------------
-REQUIRED JSON SCHEMA (STRICT – DO NOT MODIFY)
+REQUIRED JSON SCHEMA (STRICT i.e, DO NOT MODIFY)
 --------------------------------------------------
 {{
   "laq_number": string | null,
@@ -229,17 +201,14 @@ REQUIRED JSON SCHEMA (STRICT – DO NOT MODIFY)
   "year": string | null,
   "date": string | null,
   "minister": string | null,
-  "department": string | null,
-  "demand_no": string | null,
-  "cutmotion": boolean | null,
-  "duplicate": boolean | null,
+
   "qa_pairs": [
     {{
-      "question": string | null,
-      "answer": string | null
+      "question": string, 
+      "answer": string | "",
+      "attachments": [] | null 
     }}
   ],
-  "attachments": [] | null
 }}
 
 --------------------------------------------------
@@ -252,32 +221,16 @@ ANALYSIS & EXTRACTION RULES
 4. Extract the year from the document if available.
 5. Extract the date of the question or reply exactly as stated.
 6. Extract the name/designation of the Minister who answered the question.
-7. Extract the Department, Demand No, Cut Motion status, and Duplicate status
-   if present.
 8. Detect all questions and sub-questions, including labels such as (a), (b), (c),
    numbered formats, or paragraph-style questions.
-9. Identify follow-up questions using linguistic and semantic cues such as:
-   - “if so”, “if yes”, “thereof”, “details of”, “reasons for”
-   - references like “the above”, “the same”, “said proposal”
 10. Determine logical dependency between questions and group inter-related
     questions conceptually during analysis.
 
 --------------------------------------------------
-QUESTION–ANSWER MAPPING LOGIC (CRITICAL)
+QUESTION:ANSWER MAPPING LOGIC (CRITICAL)
 --------------------------------------------------
 
-11. Sometimes a SINGLE COMBINED REPLY answers multiple inter-related questions
-    (main question + follow-up questions).
-12. In such cases:
-    - COPY THE SAME ANSWER TEXT for:
-      • the main question
-      • each dependent follow-up question
-13. Do NOT fragment or paraphrase the combined reply differently for each question.
-14. Ensure that every follow-up question inherits the contextual meaning of its
-    main question.
-15. If a reply indirectly or implicitly answers a question, map it correctly
-    without inventing new information.
-16. If a question exists but no reply is provided:
+ If a question exists but no reply is provided: 
     - Set "answer" to an empty string.
 
 --------------------------------------------------
@@ -311,14 +264,27 @@ Begin analysis and extraction now.
             )
             response_text = response["response"].strip()
 
+            print("Mistral response received, parsing JSON...")
+            print("=" * 80)
+            print("RAW MISTRAL RESPONSE:")
+            print(response_text)
+            print("=" * 80)
+
             # Try to parse JSON
             try:
                 laq_dict = json.loads(response_text)
-            except json.JSONDecodeError:
+                print("✅ JSON parsed successfully on first attempt")
+            except json.JSONDecodeError as e:
+                print(f"⚠️ Initial JSON parsing failed: {e}")
+                print(f"   Error at line {e.lineno}, column {e.colno}, position {e.pos}")
                 # Fallback: try to extract JSON from response
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
                 if json_match:
+                    extracted_json = json_match.group()
+                    print("🔄 Attempting to parse extracted JSON...")
+                    print(f"Extracted: {extracted_json[:200]}...")
                     laq_dict = json.loads(json_match.group())
+                    print("✅ JSON parsed successfully after extraction")
                 else:
                     raise PDFProcessingError(
                         f"Could not parse Mistral response as JSON.\n"
@@ -327,7 +293,7 @@ Begin analysis and extraction now.
 
             # Validate with Pydantic
             try:
-                laq_data = LAQData(**laq_dict)
+                laq_data = LAQDataResponse(**laq_dict)
                 print(f"✅ Successfully extracted {len(laq_data.qa_pairs)} Q&A pairs")
                 return laq_data
             except ValidationError as e:
@@ -338,14 +304,14 @@ Begin analysis and extraction now.
                 raise
             raise PDFProcessingError(f"Mistral processing error: {e}") from e
 
-    def process_pdf(self, pdf_path: str) -> LAQData:
+    def process_pdf(self, pdf_path: str) -> LAQDataResponse:
         """Complete pipeline: validate -> extract LAQ number from filename -> structure with LLM.
 
         Args:
             pdf_path: Path to the PDF file
 
         Returns:
-            Validated LAQData object
+            Validated LAQDataResponse object
 
         Raises:
             PDFProcessingError: If any step fails
@@ -353,34 +319,17 @@ Begin analysis and extraction now.
         # Step 1: Validate
         validated_path = self.validate_pdf_file(pdf_path)
 
-        # Step 2: Try to extract LAQ number from filename first
-        filename_laq_number = self.extract_laq_number_from_filename(validated_path.name)
-        if filename_laq_number:
-            print(f"📄 Extracted LAQ number from filename: {filename_laq_number}")
-        else:
-            print("📄 No LAQ number found in filename, will use LLM extraction")
+        # # Step 2: Try to extract LAQ number from filename first
+        # filename_laq_number = self.extract_laq_number_from_filename(validated_path.name)
+        # if filename_laq_number:
+        #     print(f"📄 Extracted LAQ number from filename: {filename_laq_number}")
+        # else:
+        #     print("📄 No LAQ number found in filename, will use LLM extraction")
 
         # Step 3: Extract markdown
         markdown_data = self.extract_markdown_from_pdf(validated_path)
 
         # Step 4: Structure with LLM
         laq_data = self.structure_laqs_with_mistral(markdown_data, validated_path)
-
-        # # Step 5: Override LAQ number with filename extraction if available
-        # if filename_laq_number:
-        #     print(
-        #         f"🔄 Overriding LLM-extracted LAQ number '{laq_data.laq_number}' with filename-based '{filename_laq_number}'"
-        #     )
-        #     # Create new LAQData with filename-based LAQ number
-        #     laq_data = LAQData(
-        #         pdf_title=laq_data.pdf_title,
-        #         laq_type=laq_data.laq_type,
-        #         laq_number=filename_laq_number,  # Use filename-based number
-        #         minister=laq_data.minister,
-        #         date=laq_data.date,
-        #         qa_pairs=laq_data.qa_pairs,
-        #         tabled_by=laq_data.tabled_by,
-        #         attachments=laq_data.attachments,
-        #     )
 
         return laq_data

@@ -1,20 +1,37 @@
 /**
- * Upload page component
+ * Upload page component - LAQ validation workflow
  */
 
 import { useState, useRef } from 'react'
-import { HiCloudUpload, HiDocument, HiCheckCircle, HiExclamation, HiX } from 'react-icons/hi'
-import { uploadPDF } from '../services/api'
+import { HiCloudUpload, HiDocument, HiCheckCircle, HiExclamation, HiX, HiPaperClip } from 'react-icons/hi'
+import { processLAQForValidation, confirmAndStore } from '../services/api'
+import LAQEditor from '../components/LAQEditor'
 import './Upload.css'
 
 function Upload() {
-  const [file, setFile] = useState(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadSuccess, setUploadSuccess] = useState(null)
-  const [uploadError, setUploadError] = useState(null)
+  // File states
+  const [replyFile, setReplyFile] = useState(null)
+  const [annexureFiles, setAnnexureFiles] = useState([])
+  
+  // Processing states
+  const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState(null)
+  
+  // Validation states
+  const [processingResponse, setProcessingResponse] = useState(null)
+  const [showEditor, setShowEditor] = useState(false)
+  
+  // Success state
+  const [storeSuccess, setStoreSuccess] = useState(null)
+  
+  // Refs
+  const replyInputRef = useRef(null)
+  const annexureInputRef = useRef(null)
+  
+  // Drag and drop states
   const [dragActive, setDragActive] = useState(false)
-  const fileInputRef = useRef(null)
 
+  // Handle drag events for reply document
   const handleDrag = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -31,64 +48,109 @@ function Upload() {
     setDragActive(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0])
+      handleReplyFile(e.dataTransfer.files[0])
     }
   }
 
-  const handleFileInput = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0])
-    }
-  }
-
-  const handleFile = (selectedFile) => {
-    // Validate file type - allow PDF and Word documents
-    const validExtensions = ['.pdf', '.doc', '.docx'];
-    const fileExtension = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf('.'));
+  // Handle reply file selection
+  const handleReplyFile = (selectedFile) => {
+    const validExtensions = ['.pdf', '.doc', '.docx']
+    const fileExtension = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf('.'))
     
     if (!validExtensions.includes(fileExtension)) {
-      setUploadError('Please select a PDF or Word document (.pdf, .doc, .docx)')
+      setError('Reply document must be PDF or Word file (.pdf, .doc, .docx)')
       return
     }
 
-    // Validate file size (50MB limit)
     const maxSize = 50 * 1024 * 1024 // 50MB
     if (selectedFile.size > maxSize) {
-      setUploadError('File size must be less than 50MB')
+      setError('File size must be less than 50MB')
       return
     }
 
-    setFile(selectedFile)
-    setUploadError(null)
-    setUploadSuccess(null)
+    setReplyFile(selectedFile)
+    setError(null)
   }
 
-  const handleUpload = async () => {
-    if (!file) return
+  const handleReplyInput = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleReplyFile(e.target.files[0])
+    }
+  }
 
-    setUploading(true)
-    setUploadError(null)
+  const removeReplyFile = () => {
+    setReplyFile(null)
+    if (replyInputRef.current) {
+      replyInputRef.current.value = ''
+    }
+  }
+
+  // Handle annexure files
+  const handleAnnexureInput = (e) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files)
+      setAnnexureFiles(prev => [...prev, ...newFiles])
+    }
+  }
+
+  const removeAnnexureFile = (index) => {
+    setAnnexureFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Process files and get data for validation
+  const handleProcessAndValidate = async () => {
+    if (!replyFile) {
+      setError('Please select a reply document')
+      return
+    }
+
+    setProcessing(true)
+    setError(null)
+    setShowEditor(false)
+    setProcessingResponse(null)
+    setStoreSuccess(null)
 
     try {
-      const result = await uploadPDF(file)
-      setUploadSuccess(result)
-      setFile(null)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    } catch (error) {
-      setUploadError(error.response?.data?.detail || error.message || 'Upload failed')
+      const response = await processLAQForValidation(replyFile, annexureFiles)
+      setProcessingResponse(response)
+      setShowEditor(true)
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Processing failed')
     } finally {
-      setUploading(false)
+      setProcessing(false)
     }
   }
 
-  const handleRemoveFile = () => {
-    setFile(null)
-    setUploadError(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+  // Confirm and store to database
+  const handleConfirm = async (validatedData) => {
+    setProcessing(true)
+    setError(null)
+
+    try {
+      const response = await confirmAndStore(
+        validatedData,
+        processingResponse.stored_directory
+      )
+      
+      setStoreSuccess(response)
+      setShowEditor(false)
+      
+      // Reset form
+      setReplyFile(null)
+      setAnnexureFiles([])
+      setProcessingResponse(null)
+      if (replyInputRef.current) replyInputRef.current.value = ''
+      if (annexureInputRef.current) annexureInputRef.current.value = ''
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Failed to store data')
+    } finally {
+      setProcessing(false)
     }
+  }
+
+  const handleCancelValidation = () => {
+    setShowEditor(false)
+    setProcessingResponse(null)
   }
 
   const formatFileSize = (bytes) => {
@@ -99,141 +161,157 @@ function Upload() {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
   }
 
+  // Show editor if processing succeeded
+  if (showEditor && processingResponse) {
+    return (
+      <LAQEditor
+        initialData={processingResponse.laq_data}
+        availableAnnexures={processingResponse.available_annexures}
+        onConfirm={handleConfirm}
+        onCancel={handleCancelValidation}
+      />
+    )
+  }
+
   return (
     <div className="upload-page">
       <div className="upload-container">
-        {/* Upload Zone */}
-        <div
-          className={`upload-zone ${dragActive ? 'drag-active' : ''} ${file ? 'has-file' : ''}`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => !file && fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.doc,.docx"
-            onChange={handleFileInput}
-            style={{ display: 'none' }}
-          />
-
-          {!file ? (
-            <>
-              <div className="upload-icon">
-                <HiCloudUpload />
-              </div>
-              <div className="upload-title">Drop PDF or Word file here or click to browse</div>
-              <div className="upload-subtitle">Supports PDF and Word documents (.pdf, .doc, .docx) up to 50MB</div>
-            </>
-          ) : (
-            <div className="file-preview">
-              <div className="file-icon">
-                <HiDocument />
-              </div>
-              <div className="file-info">
-                <div className="file-name">{file.name}</div>
-                <div className="file-size">{formatFileSize(file.size)}</div>
-              </div>
-              <button
-                className="file-remove"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleRemoveFile()
-                }}
-                disabled={uploading}
-              >
-                <HiX />
-              </button>
-            </div>
-          )}
+        <div className="upload-header">
+          <h2>Upload LAQ Documents</h2>
+          <p>Upload reply document and optional annexure files for processing</p>
         </div>
 
-        {/* Upload Button */}
-        {file && (
+        {/* Reply Document Section */}
+        <div className="section-card">
+          <h3 className="section-title-inline">Reply Document *</h3>
+          
+          <div
+            className={`upload-zone ${dragActive ? 'drag-active' : ''} ${replyFile ? 'has-file' : ''}`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => !replyFile && replyInputRef.current?.click()}
+          >
+            <input
+              ref={replyInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleReplyInput}
+              style={{ display: 'none' }}
+            />
+
+            {!replyFile ? (
+              <>
+                <div className="upload-icon">
+                  <HiCloudUpload />
+                </div>
+                <div className="upload-title">Drop reply document here or click to browse</div>
+                <div className="upload-subtitle">Supports PDF and Word documents (.pdf, .doc, .docx) up to 50MB</div>
+              </>
+            ) : (
+              <div className="file-preview">
+                <div className="file-icon">
+                  <HiDocument />
+                </div>
+                <div className="file-info">
+                  <div className="file-name">{replyFile.name}</div>
+                  <div className="file-size">{formatFileSize(replyFile.size)}</div>
+                </div>
+                <button
+                  className="file-remove"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removeReplyFile()
+                  }}
+                  disabled={processing}
+                >
+                  <HiX />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Annexure Files Section */}
+        <div className="section-card">
+          <h3 className="section-title-inline">Annexure Files (Optional)</h3>
+          
+          <div className="annexure-upload-area">
+            <input
+              ref={annexureInputRef}
+              type="file"
+              multiple
+              accept=".xlsx,.xls,.pdf,.doc,.docx"
+              onChange={handleAnnexureInput}
+              style={{ display: 'none' }}
+            />
+            
+            <button
+              className="select-files-btn"
+              onClick={() => annexureInputRef.current?.click()}
+              disabled={processing}
+            >
+              <HiPaperClip />
+              Select Annexure Files
+            </button>
+
+            {annexureFiles.length > 0 && (
+              <div className="selected-files">
+                <p className="files-count">{annexureFiles.length} file(s) selected</p>
+                <div className="files-list">
+                  {annexureFiles.map((file, index) => (
+                    <div key={index} className="file-item">
+                      <HiDocument className="file-icon-sm" />
+                      <span className="file-name-sm">{file.name}</span>
+                      <span className="file-size-sm">{formatFileSize(file.size)}</span>
+                      <button
+                        className="remove-btn-sm"
+                        onClick={() => removeAnnexureFile(index)}
+                        disabled={processing}
+                      >
+                        <HiX />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Process Button */}
+        {replyFile && (
           <button
-            className="upload-button"
-            onClick={handleUpload}
-            disabled={uploading}
+            className="upload-button-main"
+            onClick={handleProcessAndValidate}
+            disabled={processing}
           >
             <HiCloudUpload />
-            <span>{uploading ? 'Processing...' : 'Upload and Process PDF'}</span>
+            <span>{processing ? 'Processing...' : 'Process & Validate'}</span>
           </button>
         )}
 
         {/* Error Message */}
-        {uploadError && (
+        {error && (
           <div className="message error-message">
             <HiExclamation />
-            <span>{uploadError}</span>
+            <span>{error}</span>
           </div>
         )}
 
         {/* Success Message */}
-        {uploadSuccess && (
+        {storeSuccess && (
           <div className="message success-message">
             <HiCheckCircle />
             <div className="success-content">
-              <div className="success-title">Successfully processed {uploadSuccess.pdf_name}</div>
+              <div className="success-title">Successfully stored LAQ {storeSuccess.laq_number}</div>
               <div className="success-details">
-                Extracted {uploadSuccess.qa_pairs_extracted} Q&A pairs
+                Stored {storeSuccess.qa_pairs_stored} Q&A pairs to database
               </div>
             </div>
           </div>
         )}
-
-        {/* Extracted Data Preview */}
-        {uploadSuccess && uploadSuccess.laq_data && (
-          <div className="extracted-data">
-            <div className="section-header">
-              <h3 className="section-title">Extracted LAQ Data</h3>
-            </div>
-
-            <div className="laq-metadata">
-              <div className="metadata-item">
-                <span className="metadata-label">Title:</span>
-                <span className="metadata-value">{uploadSuccess.laq_data.pdf_title}</span>
-              </div>
-              <div className="metadata-item">
-                <span className="metadata-label">LAQ Number:</span>
-                <span className="metadata-value">{uploadSuccess.laq_data.laq_number}</span>
-              </div>
-              <div className="metadata-item">
-                <span className="metadata-label">Type:</span>
-                <span className="metadata-value">{uploadSuccess.laq_data.laq_type}</span>
-              </div>
-              <div className="metadata-item">
-                <span className="metadata-label">Minister:</span>
-                <span className="metadata-value">{uploadSuccess.laq_data.minister}</span>
-              </div>
-              <div className="metadata-item">
-                <span className="metadata-label">Date:</span>
-                <span className="metadata-value">{uploadSuccess.laq_data.date}</span>
-              </div>
-            </div>
-
-            <div className="qa-pairs">
-              <h4 className="qa-title">Q&A Pairs ({uploadSuccess.laq_data.qa_pairs.length})</h4>
-              {uploadSuccess.laq_data.qa_pairs.slice(0, 3).map((qa, index) => (
-                <div key={index} className="qa-pair">
-                  <div className="question">
-                    <strong>Q{index + 1}:</strong> {qa.question}
-                  </div>
-                  <div className="answer">
-                    <strong>A:</strong> {qa.answer}
-                  </div>
-                </div>
-              ))}
-              {uploadSuccess.laq_data.qa_pairs.length > 3 && (
-                <div className="qa-more">
-                  +{uploadSuccess.laq_data.qa_pairs.length - 3} more Q&A pairs
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
       </div>
     </div>
   )

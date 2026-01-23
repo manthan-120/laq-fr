@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { HiSearch, HiExclamation, HiUser, HiCalendar, HiTag } from 'react-icons/hi'
+import { HiSearch, HiExclamation, HiUser, HiCalendar, HiTag, HiDocument, HiPaperClip, HiDownload } from 'react-icons/hi'
 import { searchLAQs } from '../services/api'
 import './Search.css'
 
@@ -25,6 +25,18 @@ function Search() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const getFileIcon = (url) => {
+    if (url.endsWith('.pdf')) return '📄'
+    if (url.endsWith('.xlsx') || url.endsWith('.xls')) return '📊'
+    if (url.endsWith('.docx') || url.endsWith('.doc')) return '📝'
+    return '📎'
+  }
+
+  const getFileName = (url) => {
+    const parts = url.split('/')
+    return decodeURIComponent(parts[parts.length - 1])
   }
 
   return (
@@ -83,6 +95,49 @@ function Search() {
                       Date: {result.metadata.date}
                     </span>
                   </div>
+
+                  {/* File Links */}
+                  {(result.reply_document_url || (result.attachment_urls && result.attachment_urls.length > 0)) && (
+                    <div className="result-files">
+                      {result.reply_document_url && (
+                        <div className="file-link-section">
+                          <HiDocument className="file-section-icon" />
+                          <a 
+                            href={result.reply_document_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="file-link"
+                            download
+                          >
+                            {getFileIcon(result.reply_document_url)} {getFileName(result.reply_document_url)}
+                            <HiDownload className="download-icon" />
+                          </a>
+                        </div>
+                      )}
+
+                      {result.attachment_urls && result.attachment_urls.length > 0 && (
+                        <div className="file-link-section">
+                          <HiPaperClip className="file-section-icon" />
+                          <span className="annexure-label">Annexures:</span>
+                          <div className="annexure-links-inline">
+                            {result.attachment_urls.map((url, idx) => (
+                              <a 
+                                key={idx}
+                                href={url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="file-link"
+                                download
+                              >
+                                {getFileIcon(url)} {getFileName(url)}
+                                <HiDownload className="download-icon" />
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

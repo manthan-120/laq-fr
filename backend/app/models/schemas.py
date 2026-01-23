@@ -9,23 +9,26 @@ from pydantic import BaseModel, Field
 
 # Request/Response Models
 class QAPairResponse(BaseModel):
-    """Q&A pair response model."""
+    """Model for a question-answer pair."""
 
-    question: str
-    answer: str
+    question: str = Field(min_length=0, description="The question text")
+    answer: str = Field(min_length=0, description="The answer text")
+    attachments: Optional[List[str]] = Field(default=None, description="List of attachments")
 
 
 class LAQDataResponse(BaseModel):
-    """LAQ data response model."""
+    """Model for structured LAQ data."""
 
-    pdf_title: str
-    laq_type: str
-    laq_number: str
-    mla_name: Optional[str] = None
-    date: str
-    minister: str
-    qa_pairs: List[QAPairResponse]
-    attachments: List[str] = Field(default_factory=list)
+    pdf_title: str = Field(default="", description="Title of the LAQ document")
+    laq_type: str = Field(default="", description="Type of LAQ (e.g., Starred, Unstarred)")
+    laq_number: str = Field(description="LAQ identification number")
+    minister: str = Field(description="Name of the minister")
+    date: str = Field(description="Date of the LAQ")
+    mla_name: Optional[str] = Field(default=None, description="Person who tabled the question")
+    qa_pairs: List[QAPairResponse] = Field(min_items=1, description="List of question-answer pairs")
+    # attachments: List[str] = Field(default_factory=list, description="List of document-level attachments")
+    
+
 
 
 class SearchQuery(BaseModel):
@@ -47,6 +50,8 @@ class SearchResult(BaseModel):
     answer: str
     metadata: dict
     similarity_score: float
+    reply_document_url: Optional[str] = Field(default=None, description="URL to download reply document")
+    attachment_urls: List[str] = Field(default_factory=list, description="URLs to download annexure files")
 
 
 class SearchResponse(BaseModel):
@@ -145,3 +150,30 @@ class AnnexureUsageStats(BaseModel):
     annexure_usage_breakdown: Dict
     unreferenced_annexures: List[str]
     referenced_but_missing: List[str]
+
+
+class ProcessingResponse(BaseModel):
+    """Response after processing LAQ for validation (not stored yet)."""
+    
+    success: bool
+    message: str
+    laq_data: LAQDataResponse
+    available_annexures: List[str] = Field(default_factory=list, description="List of uploaded annexure filenames")
+    stored_directory: str = Field(description="Directory where files are stored")
+
+
+class ConfirmStoreRequest(BaseModel):
+    """Request to confirm and store validated LAQ data."""
+    
+    laq_data: LAQDataResponse
+    stored_directory: str = Field(description="Directory where files are stored")
+
+
+class ConfirmStoreResponse(BaseModel):
+    """Response after confirming and storing LAQ to database."""
+    
+    success: bool
+    message: str
+    pdf_name: str
+    qa_pairs_stored: int
+    laq_number: str

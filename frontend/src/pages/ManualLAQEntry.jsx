@@ -189,8 +189,9 @@ function ManualLAQEntry() {
       })
 
       // Debug: ensure we have real File objects and inspect payload
-      console.debug('Manual LAQ payload', payload)
-      console.debug('Submitting manual LAQ; filesMap keys:', Object.keys(filesMap))
+      console.log('Manual LAQ payload:', payload)
+      console.log('Submitting manual LAQ; filesMap keys:', Object.keys(filesMap))
+      console.log('Files in filesMap:', Object.values(filesMap).map(f => f.name))
 
       // Lazy-import API helper to avoid circular issues
       const { submitManualLAQ } = await import('../services/api')

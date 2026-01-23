@@ -93,9 +93,11 @@ class LAQDatabase:
                     "type": laq_data.get("laq_type", "N/A"),
                     "question": question[: self.config.metadata_max_length],
                     "answer": answer[: self.config.metadata_max_length],
+                    "attachments": json.dumps(qa.get("attachments", [])),
+                    "attachment_paths": json.dumps(qa.get("attachment_paths", [])),  # File paths
+                    "reply_document_path": laq_data.get("reply_document_path", ""),  # Reply document path
                     "minister": laq_data.get("minister", "N/A"),
                     "date": laq_data.get("date", "N/A"),
-                    "attachments": json.dumps(laq_data.get("attachments", [])),
                     "mla_name": laq_data.get("mla_name", "N/A"),
                     "referenced_annexures": json.dumps(referenced_annexures),
                 }
